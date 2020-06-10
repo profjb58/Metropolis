@@ -1,0 +1,13 @@
+modLoader="javafml"
+loaderVersion="[31,)"
+issueTrackerURL="https://github.com/profjb58/Metropolis/issues"
+
+[[mods]]
+modId="metropolis" 
+version="0.01"
+displayName="Metropolis"
+displayURL="https://github.com/profjb58/Metropolis/"
+authors="profjb58"
+description='''
+A new Minecraft Forge mod claims system.
+'''
