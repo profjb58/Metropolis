@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "metropolis:block/quartz_marker"
+  }
+}
