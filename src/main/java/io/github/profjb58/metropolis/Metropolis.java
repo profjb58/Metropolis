@@ -18,8 +18,7 @@ import org.apache.logging.log4j.Logger;
 @Mod(Metropolis.MOD_ID)
 public class Metropolis
 {
-    private static final Logger LOGGER = LogManager.getLogger();
-
+    public static final Logger LOGGER = LogManager.getLogger();
     public static final String MOD_ID = "metropolis";
     public static final ItemGroup M_BASE_ITEM_GROUP = new MItemGroup("base");
     public static Metropolis instance;

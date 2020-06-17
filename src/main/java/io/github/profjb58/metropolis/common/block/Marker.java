@@ -1,6 +1,8 @@
 package io.github.profjb58.metropolis.common.block;
 
 import io.github.profjb58.metropolis.Metropolis;
+import io.github.profjb58.metropolis.api.tileentities.MTileEntityTypes;
+import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.RedstoneTorchBlock;
 import net.minecraft.block.SoundType;
@@ -9,7 +11,9 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.RedstoneParticle;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.RedstoneParticleData;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -28,6 +32,16 @@ public class Marker extends TorchBlock {
                 .lightValue(lightValue));
         setRegistryName(Metropolis.MOD_ID, name);
         this.particle = particle;
+    }
+
+    @Override
+    public boolean hasTileEntity(BlockState state){
+        return true;
+    }
+
+    @Override
+    public TileEntity createTileEntity(BlockState state, IBlockReader world){
+        return MTileEntityTypes.MARKER_TE.create();
     }
 
     @OnlyIn(Dist.CLIENT)
