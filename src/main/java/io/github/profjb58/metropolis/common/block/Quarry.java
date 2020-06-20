@@ -1,7 +1,7 @@
 package io.github.profjb58.metropolis.common.block;
 
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.tileentities.MTileEntityTypes;
+import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
 import net.minecraft.block.Block;
@@ -27,6 +27,6 @@ public class Quarry extends Block {
 
     @Override
     public TileEntity createTileEntity(BlockState state, IBlockReader world){
-        return MTileEntityTypes.QUARRY_TE.create();
+        return Reference.QUARRY_TE.create();
     }
 }

@@ -1,7 +1,7 @@
 package io.github.profjb58.metropolis.client.render;
 
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.blocks.MBlocks;
+import io.github.profjb58.metropolis.Reference;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraftforge.api.distmarker.Dist;
@@ -17,8 +17,8 @@ public class Renderer {
     @OnlyIn(Dist.CLIENT)
     public static void renderLayers(final FMLClientSetupEvent event){
         //  CUTOUT-MIPPED
-        RenderTypeLookup.setRenderLayer(MBlocks.PRISMARINE_MARKER, RenderType.getCutoutMipped());
-        RenderTypeLookup.setRenderLayer(MBlocks.QUARTZ_MARKER, RenderType.getCutoutMipped());
+        RenderTypeLookup.setRenderLayer(Reference.PRISMARINE_MARKER, RenderType.getCutoutMipped());
+        RenderTypeLookup.setRenderLayer(Reference.QUARTZ_MARKER, RenderType.getCutoutMipped());
     }
 
 }

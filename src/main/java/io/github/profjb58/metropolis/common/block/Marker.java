@@ -1,24 +1,31 @@
 package io.github.profjb58.metropolis.common.block;
 
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.tileentities.MTileEntityTypes;
+import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
+import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.RedstoneTorchBlock;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.TorchBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.RedstoneParticle;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.RedstoneParticleData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
+import javax.annotation.Nullable;
 import java.util.Random;
+import java.util.UUID;
 
 
 public class Marker extends TorchBlock {
@@ -41,7 +48,26 @@ public class Marker extends TorchBlock {
 
     @Override
     public TileEntity createTileEntity(BlockState state, IBlockReader world){
-        return MTileEntityTypes.MARKER_TE.create();
+        return Reference.MARKER_TE.create();
+    }
+
+    @Override
+    public void onBlockPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
+
+        if(!worldIn.isRemote){
+            if(placer != null && placer instanceof PlayerEntity){
+                PlayerEntity player = (PlayerEntity) placer;
+                UUID uuid = player.getUniqueID();
+
+                TileEntity tile = worldIn.getTileEntity(pos);
+                if(tile != null && tile instanceof MarkerTE){
+                    MarkerTE mte = (MarkerTE) tile;
+
+                    mte.init(uuid);
+                }
+            }
+        }
     }
 
     @OnlyIn(Dist.CLIENT)

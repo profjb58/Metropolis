@@ -1,13 +1,9 @@
 package io.github.profjb58.metropolis;
 
 
-import io.github.profjb58.metropolis.api.blocks.MBlocks;
 import io.github.profjb58.metropolis.init.MItemGroup;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.item.ItemGroup;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;

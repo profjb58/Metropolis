@@ -1,8 +1,7 @@
 package io.github.profjb58.metropolis.init;
 
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.blocks.MBlocks;
-import io.github.profjb58.metropolis.api.items.MItems;
+import io.github.profjb58.metropolis.Reference;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 
@@ -14,6 +13,6 @@ public final class MItemGroup extends ItemGroup {
 
     @Override
     public ItemStack createIcon() {
-        return new ItemStack(MBlocks.QUARTZ_MARKER.asItem());
+        return new ItemStack(Reference.QUARTZ_MARKER.asItem());
     }
 }

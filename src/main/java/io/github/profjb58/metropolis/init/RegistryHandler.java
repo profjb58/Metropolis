@@ -1,8 +1,7 @@
 package io.github.profjb58.metropolis.init;
 
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.blocks.MBlocks;
-import io.github.profjb58.metropolis.api.tileentities.MTileEntityTypes;
+import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.block.Marker;
 import io.github.profjb58.metropolis.common.block.Quarry;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
@@ -35,16 +34,16 @@ public class RegistryHandler {
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event){
         event.getRegistry().registerAll(
-                new BlockItem(MBlocks.QUARTZ_MARKER, new Item.Properties().group(Metropolis.M_BASE_ITEM_GROUP)).setRegistryName(Metropolis.MOD_ID, "quartz_marker"),
-                new BlockItem(MBlocks.PRISMARINE_MARKER, new Item.Properties().group(Metropolis.M_BASE_ITEM_GROUP)).setRegistryName(Metropolis.MOD_ID, "prismarine_marker"),
-                new BlockItem(MBlocks.QUARRY, new Item.Properties().group(Metropolis.M_BASE_ITEM_GROUP)).setRegistryName(Metropolis.MOD_ID, "quarry")
+                new BlockItem(Reference.QUARTZ_MARKER, new Item.Properties().group(Metropolis.M_BASE_ITEM_GROUP)).setRegistryName(Metropolis.MOD_ID, "quartz_marker"),
+                new BlockItem(Reference.PRISMARINE_MARKER, new Item.Properties().group(Metropolis.M_BASE_ITEM_GROUP)).setRegistryName(Metropolis.MOD_ID, "prismarine_marker"),
+                new BlockItem(Reference.QUARRY, new Item.Properties().group(Metropolis.M_BASE_ITEM_GROUP)).setRegistryName(Metropolis.MOD_ID, "quarry")
         );
     }
 
     @SubscribeEvent
     public static void registerTE(RegistryEvent.Register<TileEntityType<?>> event){
-        TileEntityType<MarkerTE> markerType = TileEntityType.Builder.create(() -> new MarkerTE() , MBlocks.PRISMARINE_MARKER, MBlocks.QUARTZ_MARKER).build(null);
-        TileEntityType<QuarryTE> quarryType = TileEntityType.Builder.create(() -> new QuarryTE(), MBlocks.QUARRY).build(null);
+        TileEntityType<MarkerTE> markerType = TileEntityType.Builder.create(() -> new MarkerTE() , Reference.PRISMARINE_MARKER, Reference.QUARTZ_MARKER).build(null);
+        TileEntityType<QuarryTE> quarryType = TileEntityType.Builder.create(() -> new QuarryTE() , Reference.QUARRY).build(null);
 
         markerType.setRegistryName(Metropolis.MOD_ID, "marker_te");
         quarryType.setRegistryName(Metropolis.MOD_ID, "quarry_te");

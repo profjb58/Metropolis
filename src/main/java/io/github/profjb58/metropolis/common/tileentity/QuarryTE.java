@@ -1,7 +1,7 @@
 package io.github.profjb58.metropolis.common.tileentity;
 
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.tileentities.MTileEntityTypes;
+import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.util.NBTHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -24,7 +24,7 @@ public class QuarryTE extends TileEntity implements ITickableTileEntity {
     public int x,y,z, tick;
 
     public QuarryTE() {
-        super(MTileEntityTypes.QUARRY_TE);
+        super(Reference.QUARRY_TE);
     }
 
     @Override

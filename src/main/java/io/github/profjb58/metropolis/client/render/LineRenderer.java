@@ -5,8 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.sun.media.jfxmedia.logging.Logger;
 import io.github.profjb58.metropolis.Metropolis;
-import io.github.profjb58.metropolis.api.blocks.MBlocks;
-import io.github.profjb58.metropolis.api.tileentities.MTileEntityTypes;
+import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
 import net.minecraft.block.Block;
@@ -43,11 +42,11 @@ public class LineRenderer {
 
         Item heldItem = player.getHeldItemMainhand().getItem();
 
-        if (heldItem == MBlocks.PRISMARINE_MARKER.asItem()) {
-            locateTiles(MBlocks.PRISMARINE_MARKER, player, event.getMatrixStack(), 32);
-        } else if (heldItem == MBlocks.QUARTZ_MARKER.asItem()) {
-            locateTiles(MBlocks.QUARTZ_MARKER, player, event.getMatrixStack(), 16);
-        } else if (heldItem == MBlocks.QUARRY.asItem()) {
+        if (heldItem == Reference.PRISMARINE_MARKER.asItem()) {
+            locateTiles(Reference.PRISMARINE_MARKER, player, event.getMatrixStack(), 32);
+        } else if (heldItem == Reference.QUARTZ_MARKER.asItem()) {
+            locateTiles(Reference.QUARTZ_MARKER, player, event.getMatrixStack(), 16);
+        } else if (heldItem == Reference.QUARRY.asItem()) {
             // TODO - Quarry stuff.
         }
     }
@@ -80,9 +79,9 @@ public class LineRenderer {
                 for(int dz = -radius; dz <= radius; dz++){
                     pos.setPos(px + dx, py + dy, pz + dz);
                     if(world.getTileEntity(pos) != null){
-                        if(world.getTileEntity(pos) instanceof MarkerTE && tileBlock == MBlocks.PRISMARINE_MARKER){
+                        if(world.getTileEntity(pos) instanceof MarkerTE && tileBlock == Reference.PRISMARINE_MARKER){
                             drawLine(builder, positionMatrix,pos.getX() + 0.5f,pos.getY() + 0.6f,pos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, QUARTZ_COLOUR);
-                        } else if (world.getTileEntity(pos) instanceof MarkerTE && tileBlock == MBlocks.QUARTZ_MARKER){
+                        } else if (world.getTileEntity(pos) instanceof MarkerTE && tileBlock == Reference.QUARTZ_MARKER){
                             drawLine(builder, positionMatrix,pos.getX() + 0.5f,pos.getY() + 0.6f,pos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, PRI_COLOUR);
                         } else if (world.getTileEntity(pos) instanceof QuarryTE){
                             //TODO - Quarry.
