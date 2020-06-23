@@ -2,30 +2,17 @@ package io.github.profjb58.metropolis.common.tileentity;
 
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
-import io.github.profjb58.metropolis.event.MarkerEvents;
-import io.github.profjb58.metropolis.util.NBTHelper;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import io.github.profjb58.metropolis.common.event.MarkerEvents;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.UUID;
 
 public class MarkerTE extends TileEntity {
 
     boolean isHead, isTail, connected;
-    UUID playerPlaced = null;
+    public UUID playerPlaced = null;
     String connectedFacing = null; // Values are "north", "east", "south", "west";
     int[] prevMarker = null;
     int[] headMarker = null;
@@ -223,7 +210,7 @@ public class MarkerTE extends TileEntity {
         if(connectedFacing != null) compound.putString("connected_facing", this.connectedFacing);
         if(prevMarker != null) compound.putIntArray("prev_marker", this.prevMarker);
         if(headMarker != null) compound.putIntArray("head_marker", this.headMarker);
-        if(playerPlaced != null) compound.putUniqueId("player_placed", this.playerPlaced);
+        if(playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
 
         return super.write(compound);
     }
@@ -238,8 +225,7 @@ public class MarkerTE extends TileEntity {
             if(compound.contains("connected_facing")) this.connectedFacing = compound.getString("connected_facing");
             if(compound.contains("prev_marker")) this.prevMarker = compound.getIntArray("prev_marker");
             if(compound.contains("head_marker")) this.headMarker = compound.getIntArray("head_marker");
-            if(compound.contains("player_placed")) this.playerPlaced = compound.getUniqueId(MarkerEvents.UUID_NBT_TAG);
-
+            if(compound.hasUniqueId("player_placed")) this.playerPlaced = compound.getUniqueId(MarkerEvents.UUID_NBT_TAG);
         }
     }
 }
