@@ -6,7 +6,10 @@ import io.github.profjb58.metropolis.common.event.MarkerEvents;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 
+import javax.annotation.Nonnull;
 import java.util.UUID;
 
 public class MarkerTE extends TileEntity {

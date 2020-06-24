@@ -42,8 +42,8 @@ public class RegistryHandler {
 
     @SubscribeEvent
     public static void registerTE(RegistryEvent.Register<TileEntityType<?>> event){
-        TileEntityType<MarkerTE> markerType = TileEntityType.Builder.create(() -> new MarkerTE() , Reference.PRISMARINE_MARKER, Reference.QUARTZ_MARKER).build(null);
-        TileEntityType<QuarryTE> quarryType = TileEntityType.Builder.create(() -> new QuarryTE() , Reference.QUARRY).build(null);
+        TileEntityType<MarkerTE> markerType = TileEntityType.Builder.create(MarkerTE::new, Reference.PRISMARINE_MARKER, Reference.QUARTZ_MARKER).build(null);
+        TileEntityType<QuarryTE> quarryType = TileEntityType.Builder.create(QuarryTE::new, Reference.QUARRY).build(null);
 
         markerType.setRegistryName(Metropolis.MOD_ID, "marker_te");
         quarryType.setRegistryName(Metropolis.MOD_ID, "quarry_te");

@@ -4,7 +4,6 @@ import com.mojang.realmsclient.dto.Ops;
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.common.block.Marker;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
-import io.github.profjb58.metropolis.server.CommandEvent;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.management.OpList;
@@ -39,22 +38,12 @@ public class MarkerEvents {
             if(tile instanceof MarkerTE){
                 MarkerTE markerTE = (MarkerTE) tile;
                 if(markerTE.playerPlaced != null){
-                    if(!checkOp(player) && !player.getUniqueID().toString().equals(markerTE.playerPlaced.toString())){
+                    boolean isOp = player.hasPermissionLevel(4) || player.hasPermissionLevel(3) ? true : false;
+                    if(!isOp && !player.getUniqueID().toString().equals(markerTE.playerPlaced.toString())){
                         if(event.isCancelable()) event.setCanceled(true);
                     }
                 }
             }
         }
     }
-
-    private static boolean checkOp(PlayerEntity player){
-        for(String op : CommandEvent.OP_LIST){
-            if(player.getGameProfile().getName().equals(op)){
-                return true;
-            }
-        }
-        return false;
-    }
-
-
 }

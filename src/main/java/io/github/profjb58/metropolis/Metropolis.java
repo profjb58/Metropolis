@@ -4,7 +4,6 @@ package io.github.profjb58.metropolis;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.ParseResults;
 import io.github.profjb58.metropolis.init.MItemGroup;
-import io.github.profjb58.metropolis.server.CommandEvent;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.impl.DeOpCommand;
@@ -43,7 +42,6 @@ public class Metropolis
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.addListener(this::dedicatedServerStart);
     }
 
     //  Stuff that happens after blocks are loaded.
@@ -52,13 +50,6 @@ public class Metropolis
 
     private void clientSetup(final FMLClientSetupEvent event) {
 
-    }
-
-    private void dedicatedServerStart(final FMLServerStartedEvent event){
-        if(FMLEnvironment.dist == Dist.DEDICATED_SERVER){
-            MinecraftServer ds = event.getServer();
-            CommandEvent.OP_LIST = ds.getPlayerList().getOppedPlayerNames();
-        }
     }
 
 
