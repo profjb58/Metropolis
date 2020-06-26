@@ -36,10 +36,10 @@ public class MarkerTE extends TileEntity {
         MarkerTE marker = null;
         if (this.getBlockState().getBlock() == Reference.PRISMARINE_MARKER) {
             RADIUS_CHECK = Config.COMMON.prismarine_marker_radius.get();
-            marker = (MarkerTE) findWithinRadius(RADIUS_CHECK);
+            marker = findWithinRadius(RADIUS_CHECK);
         } else if (this.getBlockState().getBlock() == Reference.QUARTZ_MARKER){
             RADIUS_CHECK = Config.COMMON.quartz_marker_radius.get();
-            marker = (MarkerTE) findWithinRadius(RADIUS_CHECK);
+            marker = findWithinRadius(RADIUS_CHECK);
         }
 
         if(marker == null){
@@ -101,9 +101,14 @@ public class MarkerTE extends TileEntity {
                 }
             }
             //  Corner & Straight section > RADIUS_CHECK (Full destruction)
-            if(pmte != null && !pmte.isHead){
+            if(pmte != null){
                 pmte.isTail = true;
                 pmte.nextMarker = null;
+
+                if(pmte.isHead){
+                    pmte.connected = false;
+                    pmte.connectedFacing = null;
+                }
 
                 MarkerTE currentMarker = this;
                 int MAX_LOOP_VALUE = 10000; int maxLoopCounter = 0; // Prevents infinite looping.
@@ -200,7 +205,7 @@ public class MarkerTE extends TileEntity {
         return false;
     }
 
-    private TileEntity findWithinRadius(int radiusCheck){
+    private MarkerTE findWithinRadius(int radiusCheck){
         //  If Previous marker tile is a head then set to headMarker. Otherwise just transfer previous contents accross.
 
         //  Check in all 4 directions in a kind of spiral pattern.
@@ -219,7 +224,7 @@ public class MarkerTE extends TileEntity {
                                 if(!checkDirection(xBlock).equals(getMarkerFromPos(xMarker.headMarker).connectedFacing)) generateRegion = true;
                             }
                         }
-                        return world.getTileEntity(xBlock);
+                        return (MarkerTE) world.getTileEntity(xBlock);
                     }
                     BlockPos zBlock = getMarkerTailPos(new BlockPos(pos.getX(), pos.getY() + y, pos.getZ() + z));
                     if (zBlock != null) {
@@ -229,7 +234,7 @@ public class MarkerTE extends TileEntity {
                                 if(!checkDirection(zBlock).equals(getMarkerFromPos(zMarker.headMarker).connectedFacing)) generateRegion = true;
                             }
                         }
-                        return world.getTileEntity(zBlock);
+                        return (MarkerTE) world.getTileEntity(zBlock);
                     }
                     x = -x; z = -z;
                 }
