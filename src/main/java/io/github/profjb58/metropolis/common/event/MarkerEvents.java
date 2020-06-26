@@ -23,7 +23,6 @@ import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = Metropolis.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class MarkerEvents {
-
     public static final String UUID_NBT_TAG = "player_placed";
 
     @SubscribeEvent(priority = EventPriority.HIGH)
@@ -37,10 +36,12 @@ public class MarkerEvents {
             TileEntity tile = world.getTileEntity(blockPos);
             if(tile instanceof MarkerTE){
                 MarkerTE markerTE = (MarkerTE) tile;
-                if(markerTE.playerPlaced != null){
+                if(markerTE.getPlayerPlaced() != null){
                     boolean isOp = player.hasPermissionLevel(4) || player.hasPermissionLevel(3) ? true : false;
-                    if(!isOp && !player.getUniqueID().toString().equals(markerTE.playerPlaced.toString())){
+                    if(!isOp && !player.getUniqueID().toString().equals(markerTE.getPlayerPlaced().toString())){
                         if(event.isCancelable()) event.setCanceled(true);
+                    } else {
+                        markerTE.removeMarker();
                     }
                 }
             }

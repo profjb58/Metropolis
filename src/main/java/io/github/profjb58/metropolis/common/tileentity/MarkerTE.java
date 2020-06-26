@@ -3,8 +3,11 @@ package io.github.profjb58.metropolis.common.tileentity;
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.event.MarkerEvents;
+import io.github.profjb58.metropolis.config.Config;
+import net.minecraft.block.Block;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -13,12 +16,12 @@ import javax.annotation.Nonnull;
 import java.util.UUID;
 
 public class MarkerTE extends TileEntity {
+    private int RADIUS_CHECK = 16;
 
-    boolean isHead, isTail, connected;
-    public UUID playerPlaced = null;
-    String connectedFacing = null; // Values are "north", "east", "south", "west";
-    int[] prevMarker = null;
-    int[] headMarker = null;
+    private boolean isHead, isTail, connected;
+    private UUID playerPlaced = null;
+    private String connectedFacing = null; // Values are "north", "east", "south", "west". ;
+    private BlockPos prevMarker = null; private BlockPos nextMarker = null; private BlockPos headMarker = null;
 
     //  Temporary variable. Determines if the region can be connected and therefore generated.
     boolean generateRegion = false;
@@ -27,19 +30,16 @@ public class MarkerTE extends TileEntity {
         super(Reference.MARKER_TE);
     }
 
-    public void init(UUID playerPlaced){
-        if(playerPlaced == null){
-            Metropolis.LOGGER.error("Invalid associated player UUID for tile entity placement of a Marker");
-            return;
-        } else {
-            this.playerPlaced = playerPlaced;
-        }
+    public void init(@Nonnull UUID playerPlaced){
+        this.playerPlaced = playerPlaced;
 
         MarkerTE marker = null;
         if (this.getBlockState().getBlock() == Reference.PRISMARINE_MARKER) {
-            marker = (MarkerTE) findWithinRadius(32);
+            RADIUS_CHECK = Config.COMMON.prismarine_marker_radius.get();
+            marker = (MarkerTE) findWithinRadius(RADIUS_CHECK);
         } else if (this.getBlockState().getBlock() == Reference.QUARTZ_MARKER){
-            marker = (MarkerTE) findWithinRadius(16);
+            RADIUS_CHECK = Config.COMMON.quartz_marker_radius.get();
+            marker = (MarkerTE) findWithinRadius(RADIUS_CHECK);
         }
 
         if(marker == null){
@@ -47,6 +47,90 @@ public class MarkerTE extends TileEntity {
             return;
         } else {
             connectTo(marker);
+        }
+    }
+
+    public void removeMarker(){
+        //  Un-connected Head
+        if(isHead && !connected){
+            return;
+        }
+        MarkerTE pmte = getMarkerFromPos(prevMarker);
+        //  Tail
+        if(isTail && !isHead){
+            if(pmte != null){
+                if(pmte.isHead){
+                    pmte.createHead();
+                    pmte.connected = false;
+                    pmte.nextMarker = null;
+                    pmte.connectedFacing = null;
+                } else {
+                    pmte.isTail = true;
+                    pmte.nextMarker = null;
+                }
+                pmte.markDirty();
+                return;
+            } else {
+                Metropolis.LOGGER.error("Failed to correctly remove tail marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
+                        "for user with UUID: " + playerPlaced.toString());
+                return;
+            }
+        }
+        MarkerTE nmte = getMarkerFromPos(nextMarker);
+
+        if(pmte != null && nmte != null){
+            //  Straight section (Non-corner)
+            if(pmte.connectedFacing.equals(connectedFacing) && nmte.connectedFacing.equals(connectedFacing)) {
+                Block prevBlock = pmte.getBlockState().getBlock() ; Block nextBlock = nmte.getBlockState().getBlock();
+                if(prevBlock == getBlockState().getBlock() || nextBlock == getBlockState().getBlock()){
+                    if (prevMarker.getZ() == nextMarker.getZ()) {
+                        int dx = prevMarker.getX() - nextMarker.getX();
+                        if (Math.abs(dx) <= RADIUS_CHECK) {
+                            nmte.prevMarker = prevMarker;
+                            pmte.nextMarker = nextMarker;
+                            return;
+                        }
+                    } else if (prevMarker.getX() == nextMarker.getX()) {
+                        int dz = prevMarker.getZ() - nextMarker.getZ();
+                        if (Math.abs(dz) <= RADIUS_CHECK) {
+                            nmte.prevMarker = prevMarker;
+                            pmte.nextMarker = nextMarker;
+                            return;
+                        }
+                    }
+                }
+            }
+            //  Corner & Straight section > RADIUS_CHECK (Full destruction)
+            if(pmte != null && !pmte.isHead){
+                pmte.isTail = true;
+                pmte.nextMarker = null;
+
+                MarkerTE currentMarker = this;
+                int MAX_LOOP_VALUE = 10000; int maxLoopCounter = 0; // Prevents infinite looping.
+
+                //  Check for a complete loop.
+                while(currentMarker.nextMarker != null && maxLoopCounter <= MAX_LOOP_VALUE){
+                    MarkerTE nextMarkerTile = getMarkerFromPos(currentMarker.nextMarker);
+                    if(nextMarkerTile.isHead){
+                        nextMarkerTile.prevMarker = null;
+                        nextMarkerTile.isTail = false;
+                        break;
+                    } else if(nextMarkerTile != null && nextMarkerTile.playerPlaced == this.playerPlaced){
+                        world.playEvent(2001,pos,Block.getStateId(nextMarkerTile.getBlockState()));
+                        world.removeBlock(currentMarker.nextMarker, false);
+                        currentMarker = nextMarkerTile;
+                    } else if(maxLoopCounter == MAX_LOOP_VALUE){
+                       Metropolis.LOGGER.error("Unable to break loop when destroying all other required markers" +
+                               "for corner marker placed at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "]." +
+                               "Please report this issue to: [INSERT LINK HERE] ");
+                    }
+                    maxLoopCounter++;
+                }
+            } else {
+                Metropolis.LOGGER.error("Failed to correctly remove corner marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
+                        "for user with UUID: " + playerPlaced.toString());
+                return;
+            }
         }
     }
 
@@ -62,31 +146,21 @@ public class MarkerTE extends TileEntity {
         isTail = true;
         connected = true;
 
-        BlockPos prevBlockPos = prevMarkerTile.getPos();
-        prevMarker = new int[]{prevBlockPos.getX(), prevBlockPos.getY(), prevBlockPos.getZ()};
+        prevMarker = prevMarkerTile.getPos();
 
         if(prevMarkerTile.isHead){
-            headMarker = new int[]{prevBlockPos.getX(), prevBlockPos.getY(), prevBlockPos.getZ()};
+            headMarker = prevMarker;
         } else {
             headMarker = prevMarkerTile.headMarker;
         }
 
         //  Check direction of current marker.
-        if(pos.getZ() == prevBlockPos.getZ()){
-            if(prevBlockPos.getX() - pos.getX() > 0){
-                connectedFacing = "west";
-            } else {
-                connectedFacing = "east";
-            }
-        } else {
-            if(prevBlockPos.getZ() - pos.getZ() > 0){
-                connectedFacing = "north";
-            } else {
-                connectedFacing = "south";
-            }
-        }
+        connectedFacing = checkDirection(prevMarker);
+        if(prevMarkerTile.isHead) prevMarkerTile.connectedFacing = connectedFacing;
+
         prevMarkerTile.isTail = false;
         prevMarkerTile.connected = true;
+        prevMarkerTile.nextMarker = pos;
 
         //  Check if any connected head markers are found.
         if(generateRegion){
@@ -105,23 +179,19 @@ public class MarkerTE extends TileEntity {
         MarkerTE currentMarker = this;
         //  Check for a complete loop.
         while(currentMarker.prevMarker != null){
-            TileEntity prevTile = world.getTileEntity(new BlockPos(currentMarker.prevMarker[0], currentMarker.prevMarker[1], currentMarker.prevMarker[2]));
-            if(prevTile instanceof MarkerTE){
-                MarkerTE prevMarkerTile = (MarkerTE) prevTile;
-                if(prevMarkerTile != null && prevMarkerTile.playerPlaced == this.playerPlaced){
-                    currentMarker = prevMarkerTile;
-                } else {
-                    return false;
-                }
+            MarkerTE prevMarkerTile = getMarkerFromPos(currentMarker.prevMarker);
+            if(prevMarkerTile != null && prevMarkerTile.playerPlaced == this.playerPlaced){
+                currentMarker = prevMarkerTile;
             } else {
                 return false;
             }
         }
 
         if(currentMarker.isHead){
+            nextMarker = currentMarker.pos;
             isTail = false;
             currentMarker.connected = true;
-            currentMarker.prevMarker = new int[]{pos.getX(), pos.getY(), pos.getZ()};
+            currentMarker.prevMarker = pos;
             currentMarker.isTail = true;
             Metropolis.LOGGER.debug("Metropolis Marker region generated!");
             //TODO - Generate an actual region.
@@ -141,21 +211,23 @@ public class MarkerTE extends TileEntity {
                 int x = xz; int z = xz;
 
                 for(int i=0; i<=1; i++){ // Cycle twice, once for pos values and one for neg.
-                    BlockPos xBlock = getTileTailPos(new BlockPos(pos.getX() + x, pos.getY() + y, pos.getZ()));
+                    BlockPos xBlock = getMarkerTailPos(new BlockPos(pos.getX() + x, pos.getY() + y, pos.getZ()));
                     if (xBlock != null) {
                         MarkerTE xMarker = (MarkerTE) world.getTileEntity(xBlock);
                         if(xMarker.headMarker != null) {
-                            headMarkerBlockPos = new BlockPos(xMarker.headMarker[0], xMarker.headMarker[1], xMarker.headMarker[2]);
-                            if (headMarkerBlockPos.getX() == pos.getX() || headMarkerBlockPos.getZ() == pos.getZ()) generateRegion = true;
+                            if (xMarker.headMarker.getX() == pos.getX() || xMarker.headMarker.getZ() == pos.getZ()){
+                                if(!checkDirection(xBlock).equals(getMarkerFromPos(xMarker.headMarker).connectedFacing)) generateRegion = true;
+                            }
                         }
                         return world.getTileEntity(xBlock);
                     }
-                    BlockPos zBlock = getTileTailPos(new BlockPos(pos.getX(), pos.getY() + y, pos.getZ() + z));
+                    BlockPos zBlock = getMarkerTailPos(new BlockPos(pos.getX(), pos.getY() + y, pos.getZ() + z));
                     if (zBlock != null) {
                         MarkerTE zMarker = (MarkerTE) world.getTileEntity(zBlock);
                         if(zMarker.headMarker != null) {
-                            headMarkerBlockPos = new BlockPos(zMarker.headMarker[0], zMarker.headMarker[1], zMarker.headMarker[2]);
-                            if (headMarkerBlockPos.getX() == pos.getX() || headMarkerBlockPos.getZ() == pos.getZ()) generateRegion = true;
+                            if (zMarker.headMarker.getX() == pos.getX() || zMarker.headMarker.getZ() == pos.getZ()){
+                                if(!checkDirection(zBlock).equals(getMarkerFromPos(zMarker.headMarker).connectedFacing)) generateRegion = true;
+                            }
                         }
                         return world.getTileEntity(zBlock);
                     }
@@ -167,7 +239,7 @@ public class MarkerTE extends TileEntity {
     }
 
 
-    private BlockPos getTileTailPos(BlockPos posToSearch){
+    private BlockPos getMarkerTailPos(BlockPos posToSearch){
         TileEntity tile = world.getTileEntity(posToSearch);
         if(tile != null && tile instanceof MarkerTE){
             MarkerTE markerTile = (MarkerTE) tile;
@@ -204,6 +276,38 @@ public class MarkerTE extends TileEntity {
         return null;
     }
 
+    private String checkDirection(BlockPos prevMarker){
+        if(pos.getZ() == prevMarker.getZ()){
+            if(prevMarker.getX() - pos.getX() > 0){
+                return "west";
+            } else {
+                return "east";
+            }
+        } else {
+            if(prevMarker.getZ() - pos.getZ() > 0){
+                return "north";
+            } else {
+                return "south";
+            }
+        }
+    }
+
+    private MarkerTE getMarkerFromPos(BlockPos pos){
+        if(pos != null){
+            TileEntity te = world.getTileEntity(pos);
+            if(te != null && te instanceof MarkerTE) return (MarkerTE) te;
+        }
+        return null;
+    }
+
+    public UUID getPlayerPlaced(){
+        return playerPlaced;
+    }
+
+    public String getConnectedFacing(){
+        return connectedFacing;
+    }
+
     @Override
     public CompoundNBT write(CompoundNBT compound) {
         if(compound == null) compound = new CompoundNBT();
@@ -211,10 +315,10 @@ public class MarkerTE extends TileEntity {
         compound.putBoolean("is_tail", this.isTail);
         compound.putBoolean("connected", this.connected);
         if(connectedFacing != null) compound.putString("connected_facing", this.connectedFacing);
-        if(prevMarker != null) compound.putIntArray("prev_marker", this.prevMarker);
-        if(headMarker != null) compound.putIntArray("head_marker", this.headMarker);
+        if(prevMarker != null) compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
+        if(headMarker != null) compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
+        if(nextMarker != null) compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
         if(playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
-
         return super.write(compound);
     }
 
@@ -226,8 +330,18 @@ public class MarkerTE extends TileEntity {
             this.isTail = compound.getBoolean("is_tail");
             this.connected = compound.getBoolean("connected");
             if(compound.contains("connected_facing")) this.connectedFacing = compound.getString("connected_facing");
-            if(compound.contains("prev_marker")) this.prevMarker = compound.getIntArray("prev_marker");
-            if(compound.contains("head_marker")) this.headMarker = compound.getIntArray("head_marker");
+            if(compound.contains("prev_marker")){
+                int[] posIntArray = compound.getIntArray("prev_marker");
+                this.prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+            }
+            if(compound.contains("head_marker")){
+                int[] posIntArray = compound.getIntArray("head_marker");
+                this.headMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+            }
+            if(compound.contains("next_marker")){
+                int[] posIntArray = compound.getIntArray("next_marker");
+                this.nextMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+            }
             if(compound.hasUniqueId("player_placed")) this.playerPlaced = compound.getUniqueId(MarkerEvents.UUID_NBT_TAG);
         }
     }
