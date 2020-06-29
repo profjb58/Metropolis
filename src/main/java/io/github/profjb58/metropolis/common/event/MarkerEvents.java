@@ -4,10 +4,12 @@ import com.mojang.realmsclient.dto.Ops;
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.common.block.Marker;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.management.OpList;
 import net.minecraft.server.management.PlayerList;
+import net.minecraft.state.IProperty;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -28,21 +30,32 @@ public class MarkerEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onBlockBreak(BlockEvent.BreakEvent event){
         PlayerEntity player = event.getPlayer();
-        BlockState blockState = event.getState();
-        BlockPos blockPos = event.getPos();
         World world = event.getPlayer().getEntityWorld();
 
+        BlockPos breakPos = event.getPos();
+        BlockState blockState = event.getState();
+        BlockState blockStateAbove = world.getBlockState(breakPos.add(0,1,0));
+
+        TileEntity tile;
         if(blockState.getBlock() instanceof Marker){
-            TileEntity tile = world.getTileEntity(blockPos);
-            if(tile instanceof MarkerTE){
-                MarkerTE markerTE = (MarkerTE) tile;
-                if(markerTE.getPlayerPlaced() != null){
-                    boolean isOp = player.hasPermissionLevel(4) || player.hasPermissionLevel(3) ? true : false;
-                    if(!isOp && !player.getUniqueID().toString().equals(markerTE.getPlayerPlaced().toString())){
-                        if(event.isCancelable()) event.setCanceled(true);
-                    } else {
-                        markerTE.removeMarker();
-                    }
+            tile = world.getTileEntity(breakPos);
+        } else if(blockStateAbove.getBlock() instanceof Marker){
+            //TODO - Need to stop markers breaking on a FallingBlock falling.
+            // Falling block inherits 'Block'. Hence can check for an instanceof.
+
+            tile = world.getTileEntity(breakPos.add(0,1,0));
+        } else {
+            return;
+        }
+
+        if(tile instanceof MarkerTE){
+            MarkerTE markerTE = (MarkerTE) tile;
+            if(markerTE.getPlayerPlaced() != null){
+                boolean isOp = player.hasPermissionLevel(4) || player.hasPermissionLevel(3) ? true : false;
+                if(!isOp && player.getUniqueID().toString().equals(markerTE.getPlayerPlaced().toString())){
+                    if(event.isCancelable()) event.setCanceled(true);
+                } else {
+                    markerTE.removeMarker();
                 }
             }
         }

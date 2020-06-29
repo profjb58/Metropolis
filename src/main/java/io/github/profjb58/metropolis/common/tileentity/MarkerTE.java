@@ -1,7 +1,7 @@
 package io.github.profjb58.metropolis.common.tileentity;
-
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
+import io.github.profjb58.metropolis.client.render.MarkerRegionRenderer;
 import io.github.profjb58.metropolis.common.event.MarkerEvents;
 import io.github.profjb58.metropolis.config.Config;
 import net.minecraft.block.Block;
@@ -9,13 +9,13 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
 
 import javax.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.UUID;
+
+import static io.github.profjb58.metropolis.core.regions.MarkerRegion.getMarkerFromPos;
 
 public class MarkerTE extends TileEntity {
     private int RADIUS_CHECK = 16;
@@ -55,8 +55,9 @@ public class MarkerTE extends TileEntity {
         if(isHead && !connected){
             return;
         }
-        MarkerTE pmte = getMarkerFromPos(prevMarker);
-        MarkerTE nmte = getMarkerFromPos(nextMarker);
+        MarkerTE pmte = getMarkerFromPos(prevMarker, world);
+        MarkerTE nmte = getMarkerFromPos(nextMarker, world);
+
         //  Tail
         if(isTail && !isHead){
             if(pmte != null){
@@ -65,22 +66,22 @@ public class MarkerTE extends TileEntity {
                 } else {
                     pmte.isTail = true;
                     pmte.nextMarker = null;
-                    pmte.markDirty();
-                    if(nmte.isHead){
+                    if(nmte != null && nmte.isHead){
                         nmte.prevMarker = null;
+                        nmte.isTail = false;
+                        nmte.markDirty();
                     }
                 }
-                return;
+                pmte.markDirty();
             } else {
                 Metropolis.LOGGER.error("Failed to correctly remove tail marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
                         "for user with UUID: " + playerPlaced.toString());
-                return;
-            }
-        }
 
-        if(pmte != null && nmte != null){
+            }
+        } else if(pmte != null && nmte != null){
+
             //  Straight section (Non-corner)
-            if(pmte.connectedFacing.equals(connectedFacing) && nmte.connectedFacing.equals(connectedFacing)) {
+            if(pmte.connectedFacing.equals(connectedFacing) && nmte.connectedFacing.equals(connectedFacing) && !isHead) {
                 Block prevBlock = pmte.getBlockState().getBlock() ; Block nextBlock = nmte.getBlockState().getBlock();
                 if(prevBlock == getBlockState().getBlock() || nextBlock == getBlockState().getBlock()){
                     if (prevMarker.getZ() == nextMarker.getZ()) {
@@ -88,43 +89,33 @@ public class MarkerTE extends TileEntity {
                         if (Math.abs(dx) <= RADIUS_CHECK) {
                             nmte.prevMarker = prevMarker;
                             pmte.nextMarker = nextMarker;
-                            return;
                         }
                     } else if (prevMarker.getX() == nextMarker.getX()) {
                         int dz = prevMarker.getZ() - nextMarker.getZ();
                         if (Math.abs(dz) <= RADIUS_CHECK) {
                             nmte.prevMarker = prevMarker;
                             pmte.nextMarker = nextMarker;
-                            return;
                         }
                     }
                 }
-            }
-            //  Corner & Straight section > RADIUS_CHECK (Full destruction)
-            if(pmte.isHead) createHead(pmte);
-            else{ pmte.isTail = true; pmte.nextMarker = null; }
+            } else {
+                //  Corner & Straight section > RADIUS_CHECK (Full destruction)
+                pmte.isTail = true;
+                pmte.nextMarker = null;
 
-            MarkerTE currentMarker = this;
-            // Prevents infinite looping. Should only occour if a 'head' marker or marker of value 'null' is not found.
-            // Therefore only happens upon NBT error.
-            int MAX_LOOP_VALUE = 10000; int maxLoopCounter = 0;
-
-            //  Check for a complete loop.
-            while(currentMarker.nextMarker != null && maxLoopCounter <= MAX_LOOP_VALUE) {
-                MarkerTE nextMarkerTile = getMarkerFromPos(currentMarker.nextMarker);
-                if (nextMarkerTile.isHead) break;
-                else if (maxLoopCounter == MAX_LOOP_VALUE) {
-                    Metropolis.LOGGER.error("Unable to break loop when destroying all other required markers" +
-                            "for corner marker placed at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "]." +
-                            "Please report this issue to: [INSERT LINK HERE] ");
-                    break;
-                } else if (nextMarkerTile != null && nextMarkerTile.playerPlaced == this.playerPlaced) {
-                    world.playEvent(2001, pos, Block.getStateId(nextMarkerTile.getBlockState()));
+                MarkerTE currentMarker = this;
+                //  Check for a complete loop.
+                while(currentMarker.nextMarker != null) {
+                    MarkerTE nextMarkerTile = getMarkerFromPos(currentMarker.nextMarker, world);
+                    if(nextMarkerTile == null || nextMarkerTile.isHead || nextMarkerTile.playerPlaced != this.playerPlaced) break;
                     world.removeBlock(currentMarker.nextMarker, false);
                     currentMarker = nextMarkerTile;
                 }
-                maxLoopCounter++;
+
+                if(pmte.isHead) createHead(pmte); // If previous block was a head then reset it.
             }
+            nmte.markDirty();
+            pmte.markDirty();
         } else {
             Metropolis.LOGGER.error("Failed to correctly delete marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
                     "for user with UUID: " + playerPlaced.toString());
@@ -177,24 +168,27 @@ public class MarkerTE extends TileEntity {
     }
 
     private boolean generateRegion() {
-        MarkerTE currentMarker = this;
-        //  Check for a complete loop.
-        while(currentMarker.prevMarker != null){
-            MarkerTE prevMarkerTile = getMarkerFromPos(currentMarker.prevMarker);
-            if(prevMarkerTile != null && prevMarkerTile.playerPlaced == this.playerPlaced){
-                currentMarker = prevMarkerTile;
-            } else {
-                return false;
-            }
-        }
+        MarkerTE currentMarker = getMarkerFromPos(headMarker, world);
+        MarkerTE headMarkerRef = getMarkerFromPos(headMarker, world);
+        if(currentMarker != null) {
+            while (currentMarker.nextMarker != null) {
+                MarkerTE nextMarkerTile = getMarkerFromPos(currentMarker.nextMarker, world);
 
-        if(currentMarker.isHead){
-            nextMarker = currentMarker.pos;
-            currentMarker.connected = true;
-            currentMarker.prevMarker = pos;
-            Metropolis.LOGGER.debug("Metropolis Marker region generated!");
-            //TODO - Generate an actual region.
-            return true;
+                if (nextMarkerTile == null || nextMarkerTile.playerPlaced != this.playerPlaced) {
+                    return false;
+                } else if (nextMarkerTile.isTail) {
+                    nextMarker = headMarker;
+                    isTail = false;
+
+                    // Adjust head
+                    headMarkerRef.connected = true;
+                    headMarkerRef.prevMarker = pos;
+                    headMarkerRef.isTail = true;
+                    Metropolis.LOGGER.debug("Metropolis Marker region generated!");
+                    return true;
+                }
+                currentMarker = nextMarkerTile;
+            }
         }
         return false;
     }
@@ -228,14 +222,19 @@ public class MarkerTE extends TileEntity {
 
     private void checkGenerateRegion(@Nonnull MarkerTE mte){
         if(mte.headMarker != null) {
-            MarkerTE headMarker = getMarkerFromPos(mte.headMarker);
-            if(headMarker.connected){
+            MarkerTE headMarker = getMarkerFromPos(mte.headMarker, world);
+            if(headMarker.connected && headMarker != null){
                 if (mte.headMarker.getX() == pos.getX() || mte.headMarker.getZ() == pos.getZ()){
                     String direction = checkDirection(mte.getPos());
                     String headDirection = headMarker.connectedFacing;
+                    String connectingDirection = checkDirection(headMarker.getPos());
 
                     if(headDirection != null){
-                        if(!direction.equals(headDirection)) generateRegion = true;
+                        if(direction.equals(headDirection)){
+                            if(!connectingDirection.equals(headDirection)) generateRegion = true;
+                        } else {
+                            generateRegion = true;
+                        }
                     }
                 }
             }
@@ -293,34 +292,23 @@ public class MarkerTE extends TileEntity {
         }
     }
 
-    private MarkerTE getMarkerFromPos(BlockPos pos){
-        if(pos != null){
-            TileEntity te = world.getTileEntity(pos);
-            if(te != null && te instanceof MarkerTE) return (MarkerTE) te;
-        }
-        return null;
-    }
-
-    public UUID getPlayerPlaced(){
-        return playerPlaced;
-    }
-
-    public String getConnectedFacing(){
-        return connectedFacing;
-    }
-
     @Override
     public CompoundNBT write(CompoundNBT compound) {
         if(compound == null) compound = new CompoundNBT();
-        compound.putBoolean("is_head", this.isHead);
-        compound.putBoolean("is_tail", this.isTail);
-        compound.putBoolean("connected", this.connected);
-        compound.putInt("radius_check", this.RADIUS_CHECK);
-        if(connectedFacing != null) compound.putString("connected_facing", this.connectedFacing);
-        if(prevMarker != null) compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
-        if(headMarker != null) compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
-        if(nextMarker != null) compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
-        if(playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
+        if(!world.isRemote){ // Only write data from within 'write' class if on the server.
+            compound.putBoolean("is_head", this.isHead);
+            compound.putBoolean("is_tail", this.isTail);
+            compound.putBoolean("connected", this.connected);
+            compound.putInt("radius_check", this.RADIUS_CHECK);
+            if (connectedFacing != null) compound.putString("connected_facing", this.connectedFacing);
+            if (prevMarker != null)
+                compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
+            if (headMarker != null)
+                compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
+            if (nextMarker != null)
+                compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
+            if (playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
+        }
         return super.write(compound);
     }
 
@@ -351,15 +339,47 @@ public class MarkerTE extends TileEntity {
 
     @Override
     public SUpdateTileEntityPacket getUpdatePacket(){
-        CompoundNBT nbtTag = new CompoundNBT();
-
-        //Write your data into the nbtTag
-        return new SUpdateTileEntityPacket(getPos(), -1, nbtTag);
+        return new SUpdateTileEntityPacket(getPos(), -1, this.getUpdateTag());
     }
 
     @Override
     public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt){
-        CompoundNBT tag = pkt.getNbtCompound();
-        //Handle your Data
+        CompoundNBT compound = pkt.getNbtCompound();
+        handleUpdateTag(compound);
     }
+
+    //  Chunk Loading
+    @Override
+    public CompoundNBT getUpdateTag() {
+        CompoundNBT compound = new CompoundNBT();
+        if(prevMarker != null) compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
+        return this.write(compound);
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundNBT compound) {
+        super.handleUpdateTag(compound);
+
+        BlockPos prevMarker = null;
+        BlockPos currentMarker = new BlockPos(compound.getInt("x"), compound.getInt("y"), compound.getInt("z"));
+
+        if(compound.contains("prev_marker")){
+            int[] posIntArray = compound.getIntArray("prev_marker");
+            prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+        }
+        MarkerRegionRenderer.addLineToDraw(currentMarker, prevMarker);
+    }
+
+    public UUID getPlayerPlaced(){
+        return playerPlaced;
+    }
+
+    public String getConnectedFacing(){
+        return connectedFacing;
+    }
+
+    public boolean isHead() { return isHead; }
+    public boolean isTail() { return isTail; }
+    public BlockPos getNextMarkerPos() { return nextMarker; }
+
 }

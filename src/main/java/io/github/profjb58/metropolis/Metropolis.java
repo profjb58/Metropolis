@@ -6,6 +6,8 @@ import com.mojang.brigadier.ParseResults;
 import io.github.profjb58.metropolis.config.Config;
 import io.github.profjb58.metropolis.init.MItemGroup;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.impl.DeOpCommand;
 import net.minecraft.command.impl.OpCommand;
@@ -58,7 +60,8 @@ public class Metropolis
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
-
+        RenderTypeLookup.setRenderLayer(Reference.PRISMARINE_MARKER, RenderType.getCutoutMipped());
+        RenderTypeLookup.setRenderLayer(Reference.QUARTZ_MARKER, RenderType.getCutoutMipped());
     }
 
 

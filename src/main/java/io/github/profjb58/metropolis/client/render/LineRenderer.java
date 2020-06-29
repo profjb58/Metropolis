@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.Matrix4f;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -28,33 +29,38 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = Metropolis.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+
 public class LineRenderer {
 
     // Line Colours
     private static final float[] PRI_COLOUR = {1.0f, 1.0f, 0.9f, 1.0f};
     private static final float[] QUARTZ_COLOUR = {0.0f, 0.8f, 0.6f, 1.0f};
 
-    @OnlyIn(Dist.CLIENT)
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void render(RenderWorldLastEvent event){
-        ClientPlayerEntity player = Minecraft.getInstance().player;
-
-        Item heldItem = player.getHeldItemMainhand().getItem();
-
-        if (heldItem == Reference.PRISMARINE_MARKER.asItem()) {
-            locateTiles(Reference.PRISMARINE_MARKER, player, event.getMatrixStack(), 32);
-        } else if (heldItem == Reference.QUARTZ_MARKER.asItem()) {
-            locateTiles(Reference.QUARTZ_MARKER, player, event.getMatrixStack(), 16);
-        } else if (heldItem == Reference.QUARRY.asItem()) {
-            // TODO - Quarry stuff.
-        }
-    }
-
     private static final int updateFrequency = 5;
     private static int updateCounter = 0;
 
-    private static void locateTiles(Block tileBlock, ClientPlayerEntity player, MatrixStack matrixStack, int radius){
+    static void drawTileToPlayer(BlockPos tilePos, ClientPlayerEntity player, MatrixStack matrixStack, int radius){
+        IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+        IVertexBuilder builder = buffer.getBuffer(CustomRenderTypes.MARKER_LINES);
+
+        BlockPos playerPos = player.getPosition();
+        int px = playerPos.getX();
+        int py = playerPos.getY();
+        int pz = playerPos.getZ();
+        World world = player.getEntityWorld();
+
+        //  Begin pushing to the matrix stack.
+        matrixStack.push();
+
+        //  Get actual position of player and translate back to the actual location. E.g. blockpos is discrete integers. projected view isn't.
+        Vec3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
+        matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
+
+        Matrix4f positionMatrix = matrixStack.getLast().getMatrix();
+
+    }
+
+    static void locateTiles(Block tileBlock, ClientPlayerEntity player, MatrixStack matrixStack, int radius){
         IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
         IVertexBuilder builder = buffer.getBuffer(CustomRenderTypes.MARKER_LINES);
 
