@@ -4,6 +4,7 @@ import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.client.render.MarkerRegionRenderer;
 import io.github.profjb58.metropolis.common.event.MarkerEvents;
 import io.github.profjb58.metropolis.config.Config;
+import io.github.profjb58.metropolis.util.PositionHelper;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
@@ -12,7 +13,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 
 import javax.annotation.Nonnull;
-import java.util.HashMap;
 import java.util.UUID;
 
 import static io.github.profjb58.metropolis.core.regions.MarkerRegion.getMarkerFromPos;
@@ -147,7 +147,7 @@ public class MarkerTE extends TileEntity {
         }
 
         //  Check direction of current marker.
-        connectedFacing = checkDirection(prevMarker);
+        connectedFacing = PositionHelper.StringDirection.check(pos, prevMarker);
         if(prevMarkerTile.isHead) prevMarkerTile.connectedFacing = connectedFacing;
 
         prevMarkerTile.isTail = false;
@@ -225,9 +225,9 @@ public class MarkerTE extends TileEntity {
             MarkerTE headMarker = getMarkerFromPos(mte.headMarker, world);
             if(headMarker.connected && headMarker != null){
                 if (mte.headMarker.getX() == pos.getX() || mte.headMarker.getZ() == pos.getZ()){
-                    String direction = checkDirection(mte.getPos());
+                    String direction = PositionHelper.StringDirection.check(pos, mte.getPos());
                     String headDirection = headMarker.connectedFacing;
-                    String connectingDirection = checkDirection(headMarker.getPos());
+                    String connectingDirection = PositionHelper.StringDirection.check(pos, headMarker.getPos());
 
                     if(headDirection != null){
                         if(direction.equals(headDirection)){
@@ -253,43 +253,17 @@ public class MarkerTE extends TileEntity {
                     if(markerTile.connectedFacing == null){
                         return markerTile;
                     } else {
-                        if(posToSearch.getX() == pos.getX()){ // Fixed in the x plane.
-                            if(posToSearch.getZ() - pos.getZ() > 0){
-                                // Check the new point dosen't go back on itself.
-                                if(markerTile.connectedFacing.equals("south")) return null;
-                            } else {
-                                if(markerTile.connectedFacing.equals("north")) return null;
-                            }
+                        boolean inForwardPlane = PositionHelper.inForwardPlane(pos, posToSearch, connectedFacing, true, true);
+                        if(inForwardPlane) {
                             return markerTile;
-                        } else if(posToSearch.getZ() == pos.getZ()){ // Fixed in the z plane.
-                            if(posToSearch.getX() - pos.getX() > 0){
-                                if(markerTile.connectedFacing.equals("east")) return null;
-                            } else {
-                                if(markerTile.connectedFacing.equals("west")) return null;
-                            }
-                            return markerTile;
+                        } else {
+                            return null;
                         }
                     }
                 }
             }
         }
         return null;
-    }
-
-    private String checkDirection(BlockPos prevMarker){
-        if(pos.getZ() == prevMarker.getZ()){
-            if(prevMarker.getX() - pos.getX() > 0){
-                return "west";
-            } else {
-                return "east";
-            }
-        } else {
-            if(prevMarker.getZ() - pos.getZ() > 0){
-                return "north";
-            } else {
-                return "south";
-            }
-        }
     }
 
     @Override
@@ -352,7 +326,9 @@ public class MarkerTE extends TileEntity {
     @Override
     public CompoundNBT getUpdateTag() {
         CompoundNBT compound = new CompoundNBT();
+        compound.putBoolean("is_tail", isTail);
         if(prevMarker != null) compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
+        if(connectedFacing != null) compound.putString("connected_facing", connectedFacing);
         return this.write(compound);
     }
 
@@ -362,12 +338,18 @@ public class MarkerTE extends TileEntity {
 
         BlockPos prevMarker = null;
         BlockPos currentMarker = new BlockPos(compound.getInt("x"), compound.getInt("y"), compound.getInt("z"));
+        String connectedFacing = null;
+        boolean isTail = compound.getBoolean("is_tail");
+
+        if(compound.contains("connected_facing")){
+            connectedFacing = compound.getString("connected_facing");
+        }
 
         if(compound.contains("prev_marker")){
             int[] posIntArray = compound.getIntArray("prev_marker");
             prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
         }
-        MarkerRegionRenderer.addLineToDraw(currentMarker, prevMarker);
+        MarkerRegionRenderer.addLineToDraw(currentMarker, prevMarker, connectedFacing, isTail);
     }
 
     public UUID getPlayerPlaced(){

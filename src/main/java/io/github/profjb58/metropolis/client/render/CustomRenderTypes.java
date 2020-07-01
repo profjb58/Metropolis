@@ -19,7 +19,7 @@ public class CustomRenderTypes extends RenderType {
     private static final LineState THIN_LINE = new LineState(OptionalDouble.of(1.5f));
 
     //  TODO - May need a lightmap, cull, and depth test.
-    public static final RenderType MARKER_LINES = makeType("marker_lines",
+    public static final RenderType THICK_LINES = makeType("thick_lines",
             DefaultVertexFormats.POSITION_COLOR, GL11.GL_LINES, 256,
             RenderType.State.getBuilder().line(THICK_LINE)
                     .layer(PROJECTION_LAYERING)

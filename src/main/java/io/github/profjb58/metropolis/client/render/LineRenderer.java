@@ -9,6 +9,7 @@ import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
@@ -29,25 +30,25 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import javax.annotation.Nullable;
 
 public class LineRenderer {
-
     // Line Colours
-    private static final float[] PRI_COLOUR = {1.0f, 1.0f, 0.9f, 1.0f};
-    private static final float[] QUARTZ_COLOUR = {0.0f, 0.8f, 0.6f, 1.0f};
+    private static final float[] PRI_MARKER_COLOUR = {1.0f, 1.0f, 0.9f, 1.0f};
+    private static final float[] QUARTZ_MARKER_COLOUR = {0.0f, 0.8f, 0.6f, 1.0f};
 
     private static final int updateFrequency = 5;
     private static int updateCounter = 0;
 
-    static void drawTileToPlayer(BlockPos tilePos, ClientPlayerEntity player, MatrixStack matrixStack, int radius){
+    static void drawTileToPlayer(TileEntity tile, ClientPlayerEntity player, MatrixStack matrixStack){
         IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
-        IVertexBuilder builder = buffer.getBuffer(CustomRenderTypes.MARKER_LINES);
+        IVertexBuilder lineBuilder = buffer.getBuffer(CustomRenderTypes.THICK_LINES);
 
         BlockPos playerPos = player.getPosition();
+        BlockPos tilePos = tile.getPos();
         int px = playerPos.getX();
         int py = playerPos.getY();
         int pz = playerPos.getZ();
-        World world = player.getEntityWorld();
 
         //  Begin pushing to the matrix stack.
         matrixStack.push();
@@ -57,48 +58,21 @@ public class LineRenderer {
         matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
 
         Matrix4f positionMatrix = matrixStack.getLast().getMatrix();
+        float[] lineColour = getLineColour(tile.getBlockState().getBlock());
+        drawLine(lineBuilder, positionMatrix,tilePos.getX() + 0.5f,tilePos.getY() + 0.6f,tilePos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, lineColour);
 
+        matrixStack.pop();
+        buffer.finish(CustomRenderTypes.THICK_LINES);
     }
 
-    static void locateTiles(Block tileBlock, ClientPlayerEntity player, MatrixStack matrixStack, int radius){
-        IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
-        IVertexBuilder builder = buffer.getBuffer(CustomRenderTypes.MARKER_LINES);
-
-        BlockPos playerPos = player.getPosition();
-        int px = playerPos.getX();
-        int py = playerPos.getY();
-        int pz = playerPos.getZ();
-        World world = player.getEntityWorld();
-
-        //  Begin pushing to the matrix stack.
-        matrixStack.push();
-
-        //  Get actual position of player and translate back to the actual location. E.g. blockpos is discrete integers. projected view isn't.
-        Vec3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
-        matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
-
-        Matrix4f positionMatrix = matrixStack.getLast().getMatrix();
-
-        BlockPos.Mutable pos = new BlockPos.Mutable(); // Not a new object, can't store it.
-        for(int dx = -radius; dx <= radius; dx++){
-            for(int dy = -radius; dy <= radius; dy++){
-                for(int dz = -radius; dz <= radius; dz++){
-                    pos.setPos(px + dx, py + dy, pz + dz);
-                    if(world.getTileEntity(pos) != null){
-                        if(world.getTileEntity(pos) instanceof MarkerTE && tileBlock == Reference.PRISMARINE_MARKER){
-                            drawLine(builder, positionMatrix,pos.getX() + 0.5f,pos.getY() + 0.6f,pos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, QUARTZ_COLOUR);
-                        } else if (world.getTileEntity(pos) instanceof MarkerTE && tileBlock == Reference.QUARTZ_MARKER){
-                            drawLine(builder, positionMatrix,pos.getX() + 0.5f,pos.getY() + 0.6f,pos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, PRI_COLOUR);
-                        } else if (world.getTileEntity(pos) instanceof QuarryTE){
-                            //TODO - Quarry.
-                        }
-                    }
-                }
-            }
+    private static float[] getLineColour(Block block){
+        if(block.getBlock() == Reference.QUARTZ_MARKER){
+            return PRI_MARKER_COLOUR;
+        } else if(block.getBlock() == Reference.PRISMARINE_MARKER){
+            return QUARTZ_MARKER_COLOUR;
+        } else {
+            return null;
         }
-        matrixStack.pop();
-        buffer.finish(CustomRenderTypes.MARKER_LINES);
-
     }
 
     private static void drawLine(IVertexBuilder builder, Matrix4f posMatrix, float x1, float y1, float z1, float x2, float y2, float z2, float[] colour){
