@@ -3,11 +3,11 @@ import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.config.Config;
-import io.github.profjb58.metropolis.util.PositionHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -23,40 +23,40 @@ public class MarkerRegionRenderer extends LineRenderer {
     private static HashMap<BlockPos, BlockPos> markerLines = new HashMap<>();
 
     private static BlockPos currentTailPos = null;
-    private static String currentFacing = null;
+    private static Direction currentFacing = null;
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void render(RenderWorldLastEvent event){
-        if(currentTailPos == null || currentFacing == null) return;
-
-        ClientPlayerEntity player = Minecraft.getInstance().player;
-        Item heldItem = player != null ? player.getHeldItemMainhand().getItem() : null;
-
-        TileEntity currentMarker = player.world.getTileEntity(currentTailPos);
-
-        if(currentMarker != null && currentMarker instanceof MarkerTE){
-            boolean withinSearchRadius = false;
-            boolean renderItemHeld = false;
-
-            if(heldItem == Reference.PRISMARINE_MARKER.asItem()){
-                if(checkRadius(currentMarker.getPos(), player.getPosition(), Config.COMMON.prismarine_marker_radius.get())) withinSearchRadius = true;
-            } else if (heldItem == Reference.QUARTZ_MARKER.asItem()){
-                if(checkRadius(currentMarker.getPos(), player.getPosition(), Config.COMMON.quartz_marker_radius.get())) withinSearchRadius = true;
-            }
-
-            if(withinSearchRadius){
-                if(PositionHelper.inForwardPlane(currentMarker.getPos(), player.getPosition(), currentFacing)){
-                    drawTileToPlayer(currentMarker, player, event.getMatrixStack());
-                }
-            }
-        }
-
-        for (HashMap.Entry<BlockPos, BlockPos> entry : markerLines.entrySet()) {
-            BlockPos startPos = entry.getKey();
-            BlockPos endPos = entry.getValue();
-
-            //TODO - Fixed rendering;
-        }
+//        if(currentTailPos == null || currentFacing == null) return;
+//
+//        ClientPlayerEntity player = Minecraft.getInstance().player;
+//        Item heldItem = player != null ? player.getHeldItemMainhand().getItem() : null;
+//
+//        TileEntity currentMarker = player.world.getTileEntity(currentTailPos);
+//
+//        if(currentMarker != null && currentMarker instanceof MarkerTE){
+//            boolean withinSearchRadius = false;
+//            boolean renderItemHeld = false;
+//
+//            if(heldItem == Reference.PRISMARINE_MARKER.asItem()){
+//                if(checkRadius(currentMarker.getPos(), player.getPosition(), Config.COMMON.prismarine_marker_radius.get())) withinSearchRadius = true;
+//            } else if (heldItem == Reference.QUARTZ_MARKER.asItem()){
+//                if(checkRadius(currentMarker.getPos(), player.getPosition(), Config.COMMON.quartz_marker_radius.get())) withinSearchRadius = true;
+//            }
+//
+//            if(withinSearchRadius){
+//                if(PositionHelper.inForwardPlane(currentMarker.getPos(), player.getPosition(), currentFacing)){
+//                    drawTileToPlayer(currentMarker, player, event.getMatrixStack());
+//                }
+//            }
+//        }
+//
+//        for (HashMap.Entry<BlockPos, BlockPos> entry : markerLines.entrySet()) {
+//            BlockPos startPos = entry.getKey();
+//            BlockPos endPos = entry.getValue();
+//
+//            //TODO - Fixed rendering;
+//        }
     }
 
     private static boolean checkRadius(BlockPos currentPos, BlockPos prevPos, int radius){
@@ -66,7 +66,7 @@ public class MarkerRegionRenderer extends LineRenderer {
         return false;
     }
 
-    public static void addLineToDraw(BlockPos startPos, @Nullable BlockPos endPos, String connectedFacing, boolean isTail){
+    public static void addLineToDraw(BlockPos startPos, @Nullable BlockPos endPos, Direction connectedFacing, boolean isTail){
         markerLines.put(startPos, endPos);
         if(isTail) {
             currentTailPos = endPos;
