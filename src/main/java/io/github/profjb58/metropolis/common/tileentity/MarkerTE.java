@@ -45,7 +45,7 @@ public class MarkerTE extends TileEntity {
     /**
      * Gets radius to search for different type of Marker Tile Entities. Keep properly updated.
      **/
-    private static int getMarkerRadius(Block markerBlock){
+    public static int getMarkerRadius(Block markerBlock){
         if(markerBlock == Reference.PRISMARINE_MARKER){
             return Config.COMMON.prismarine_marker_radius.get();
         } else if(markerBlock == Reference.QUARTZ_MARKER){
@@ -237,12 +237,12 @@ public class MarkerTE extends TileEntity {
                     currentMarker = nextMarkerTile;
                 }
 
-                if(pmte.isHead) createHead(pmte); // If previous block was a head then reset it.
+                if(pmte.isHead) createHead(pmte); // If previous block was a head then reset it
             }
             nmte.markDirty();
             pmte.markDirty();
         } else {
-            Metropolis.LOGGER.error("Failed to correctly delete marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
+            Metropolis.LOGGER.debug("Failed to correctly delete marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
                     "for user with UUID: " + playerPlaced.toString());
             return;
         }
@@ -354,7 +354,13 @@ public class MarkerTE extends TileEntity {
             int[] posIntArray = compound.getIntArray("prev_marker");
             prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
         }
-        MarkerRegionRenderer.addLineToDraw(currentMarker, prevMarker, connectedFacing, isTail);
+
+        if(prevMarker == null && isTail){ // Is the head.
+            MarkerRegionRenderer.setCurrentTailPos(currentMarker);
+            MarkerRegionRenderer.resetCurrentFacing();
+        } else {
+            MarkerRegionRenderer.addLineToDraw(prevMarker, currentMarker, connectedFacing, isTail);
+        }
     }
 
     public static MarkerTE getMarkerFromPos(BlockPos pos, World world){

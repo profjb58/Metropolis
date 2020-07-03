@@ -57,6 +57,7 @@ public class Metropolis
 
     //  Stuff that happens after blocks are loaded.
     private void setup(final FMLCommonSetupEvent event) {
+
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
