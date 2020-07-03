@@ -21,15 +21,13 @@ build
 eclipse
 run
 
-# Files from Forge MDK
-forge
-*changelog.txt
-
 # Additional Files
-*LICENSE.txt
-*README.txt
-*CREDITS.txt
-*.gitattributes
-*changelog.txt
-*gradle.properties
+LICENSE.txt
+README.txt
+CREDITS.txt
+changelog.txt
+gradle.properties
+
+# Files from Forge MDK
+changelog.txt
 
