@@ -2,6 +2,8 @@ package io.github.profjb58.metropolis;
 
 import io.github.profjb58.metropolis.common.block.Marker;
 import io.github.profjb58.metropolis.common.block.Quarry;
+import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
+import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraftforge.registries.ObjectHolder;
 
@@ -13,6 +15,6 @@ public class Reference {
     public static final Quarry QUARRY = null;
 
     //  ====TILE ENTITY TYPES====
-    public static final TileEntityType<?> MARKER_TE = null;
-    public static final TileEntityType<?> QUARRY_TE = null;
+    public static final TileEntityType<MarkerTE> MARKER_TE = null;
+    public static final TileEntityType<QuarryTE> QUARRY_TE = null;
 }

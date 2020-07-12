@@ -5,6 +5,7 @@ import io.github.profjb58.metropolis.client.render.MarkerRegionRenderer;
 import io.github.profjb58.metropolis.common.event.MarkerEvents;
 import io.github.profjb58.metropolis.config.Config;
 import io.github.profjb58.metropolis.util.DirectionHelper;
+import io.github.profjb58.metropolis.util.RegionHelper;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
@@ -13,8 +14,10 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class MarkerTE extends TileEntity {
@@ -55,6 +58,16 @@ public class MarkerTE extends TileEntity {
         }
     }
 
+    private void reset(){
+        isHead = false;
+        isTail = false;
+        headMarker = null;
+        prevMarker = null;
+        nextMarker = null;
+        connectedFacing = null;
+        markDirty();
+    }
+
     private void createHead(MarkerTE mte){
         mte.isHead = true;
         mte.isTail = true;
@@ -65,6 +78,7 @@ public class MarkerTE extends TileEntity {
     }
 
     private void connectTo(MarkerTE prevMarkerTile) {
+
         isHead = false;
         isTail = true;
         prevMarker = prevMarkerTile.getPos();
@@ -127,7 +141,7 @@ public class MarkerTE extends TileEntity {
         TileEntity tile = world.getTileEntity(posToSearch);
         if(tile != null && tile instanceof MarkerTE){
             MarkerTE markerTile = (MarkerTE) tile;
-            if(markerTile.playerPlaced == playerPlaced && markerTile.isTail){
+            if(markerTile.playerPlaced.equals(playerPlaced) && markerTile.isTail){
                 if(markerTile.isHead && markerTile.connectedFacing != null){
                     //  Ignore connected head markers.
                     return null;
@@ -232,7 +246,13 @@ public class MarkerTE extends TileEntity {
                 //  Check for a complete loop.
                 while(currentMarker.nextMarker != null) {
                     MarkerTE nextMarkerTile = getMarkerFromPos(currentMarker.nextMarker, world);
-                    if(nextMarkerTile == null || nextMarkerTile.isHead || nextMarkerTile.playerPlaced != this.playerPlaced) break;
+                    if(nextMarkerTile == null || !nextMarkerTile.playerPlaced.equals(this.playerPlaced)){
+                        break;
+                    } else if(nextMarkerTile.isHead){
+                        nextMarkerTile.prevMarker = null;
+                        nextMarkerTile.markDirty();
+                        break;
+                    }
                     world.removeBlock(currentMarker.nextMarker, false);
                     currentMarker = nextMarkerTile;
                 }
@@ -255,7 +275,7 @@ public class MarkerTE extends TileEntity {
             while (currentMarker.nextMarker != null) {
                 MarkerTE nextMarkerTile = getMarkerFromPos(currentMarker.nextMarker, world);
 
-                if (nextMarkerTile == null || nextMarkerTile.playerPlaced != this.playerPlaced) {
+                if (nextMarkerTile == null || !nextMarkerTile.playerPlaced.equals(this.playerPlaced)) {
                     return false;
                 } else if (nextMarkerTile.isTail) {
                     nextMarker = headMarker;
@@ -264,6 +284,7 @@ public class MarkerTE extends TileEntity {
                     // Adjust head
                     headMarkerRef.prevMarker = pos;
                     headMarkerRef.isTail = true;
+                    headMarkerRef.markDirty();
                     Metropolis.LOGGER.debug("Metropolis Marker region generated!");
                     return true;
                 }
@@ -274,46 +295,64 @@ public class MarkerTE extends TileEntity {
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT compound) {
-        if(compound == null) compound = new CompoundNBT();
-        if(!world.isRemote){ // Only write data from within 'write' class if on the server.
-            compound.putBoolean("is_head", this.isHead);
-            compound.putBoolean("is_tail", this.isTail);
-            if (connectedFacing != null) compound.putString("connected_facing", DirectionHelper.convertToNBTString(this.connectedFacing));
-            if (prevMarker != null)
-                compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
-            if (headMarker != null)
-                compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
-            if (nextMarker != null)
-                compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
-            if (playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
-        }
-        return super.write(compound);
+    public void markDirty() {
+        super.markDirty();
+        notifyClientUpdate();
     }
+
+    private void notifyClientUpdate(){
+        world.notifyBlockUpdate(pos, getBlockState(), getBlockState(), 2);
+    }
+
+
+    @Override
+    public CompoundNBT write(CompoundNBT compound) {
+        super.write(compound);
+
+        if (playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
+
+        compound.putBoolean("is_tail", this.isTail);
+        compound.putBoolean("is_head", this.isHead);
+
+        if (connectedFacing != null) compound.putString("connected_facing", DirectionHelper.convertToNBTString(this.connectedFacing));
+        if (prevMarker != null)
+            compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
+        if (nextMarker != null)
+            compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
+        if (headMarker != null)
+            compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
+
+        return compound;
+    }
+
 
     @Override
     public void read(CompoundNBT compound){
         super.read(compound);
-        if(compound != null){
-            this.isHead = compound.getBoolean("is_head");
-            this.isTail = compound.getBoolean("is_tail");
-            if(compound.contains("connected_facing")){
-                this.connectedFacing = DirectionHelper.convertNBTStringToDirection(compound.getString("connected_facing"));
-            }
-            if(compound.contains("prev_marker")){
-                int[] posIntArray = compound.getIntArray("prev_marker");
-                this.prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
-            }
-            if(compound.contains("head_marker")){
-                int[] posIntArray = compound.getIntArray("head_marker");
-                this.headMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
-            }
-            if(compound.contains("next_marker")){
-                int[] posIntArray = compound.getIntArray("next_marker");
-                this.nextMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
-            }
-            if(compound.hasUniqueId("player_placed")) this.playerPlaced = compound.getUniqueId(MarkerEvents.UUID_NBT_TAG);
+
+        if(compound.hasUniqueId("player_placed")) this.playerPlaced = compound.getUniqueId(MarkerEvents.UUID_NBT_TAG);
+
+        this.isHead = compound.getBoolean("is_head");
+        this.isTail = compound.getBoolean("is_tail");
+
+        if(compound.contains("connected_facing")){
+            this.connectedFacing = DirectionHelper.convertNBTStringToDirection(compound.getString("connected_facing"));
         }
+        if(compound.contains("prev_marker")){
+            int[] posIntArray = compound.getIntArray("prev_marker");
+            this.prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+        }
+
+        if(compound.contains("next_marker")){
+            int[] posIntArray = compound.getIntArray("next_marker");
+            this.nextMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+        }
+
+        if(compound.contains("head_marker")){
+            int[] posIntArray = compound.getIntArray("head_marker");
+            this.headMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
+        }
+
     }
 
     @Override
@@ -327,40 +366,24 @@ public class MarkerTE extends TileEntity {
         handleUpdateTag(compound);
     }
 
-    //  Chunk Loading
     @Override
     public CompoundNBT getUpdateTag() {
         CompoundNBT compound = new CompoundNBT();
-        compound.putBoolean("is_tail", isTail);
-        if(prevMarker != null) compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
-        if (connectedFacing != null) compound.putString("connected_facing", DirectionHelper.convertToNBTString(this.connectedFacing));
-        return this.write(compound);
+        this.write(compound);
+
+        return compound;
     }
 
     @Override
     public void handleUpdateTag(CompoundNBT compound) {
-        super.handleUpdateTag(compound);
-
-        BlockPos prevMarker = null;
+        this.read(compound);
         BlockPos currentMarker = new BlockPos(compound.getInt("x"), compound.getInt("y"), compound.getInt("z"));
-        Direction connectedFacing = null;
-        boolean isTail = compound.getBoolean("is_tail");
 
-        if(compound.contains("connected_facing")){
-            connectedFacing = DirectionHelper.convertNBTStringToDirection(compound.getString("connected_facing"));
-        }
-
-        if(compound.contains("prev_marker")){
-            int[] posIntArray = compound.getIntArray("prev_marker");
-            prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
-        }
-
-        if(prevMarker == null && isTail){ // Is the head.
+        if(prevMarker == null && headMarker == null && isTail){ // Is the head.
             MarkerRegionRenderer.setCurrentTailPos(currentMarker);
             MarkerRegionRenderer.resetCurrentFacing();
-        } else {
-            MarkerRegionRenderer.addLineToDraw(prevMarker, currentMarker, connectedFacing, isTail);
         }
+        MarkerRegionRenderer.addMarkerToDraw(currentMarker, headMarker, connectedFacing, isTail);
     }
 
     public static MarkerTE getMarkerFromPos(BlockPos pos, World world){
@@ -380,7 +403,11 @@ public class MarkerTE extends TileEntity {
     }
 
     public boolean isHead() { return isHead; }
+
     public boolean isTail() { return isTail; }
+
     public BlockPos getNextMarkerPos() { return nextMarker; }
+
+    public BlockPos getPrevMarkerPos() { return prevMarker; }
 
 }

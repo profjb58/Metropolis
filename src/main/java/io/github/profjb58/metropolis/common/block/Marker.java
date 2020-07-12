@@ -2,6 +2,7 @@ package io.github.profjb58.metropolis.common.block;
 
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
+import io.github.profjb58.metropolis.client.render.MarkerRegionRenderer;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
 import net.minecraft.block.BlockState;
@@ -12,6 +13,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.particle.RedstoneParticle;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.RedstoneParticleData;
@@ -70,6 +72,16 @@ public class Marker extends TorchBlock {
         }
     }
 
+    @Override
+    public void onPlayerDestroy(IWorld worldIn, BlockPos pos, BlockState state) {
+        super.onPlayerDestroy(worldIn, pos, state);
+
+//        if(!worldIn.isRemote()){
+//            World world = worldIn.getWorld();
+//            world.notifyBlockUpdate(pos, state, state, 2);
+//        }
+    }
+
     @OnlyIn(Dist.CLIENT)
     @Override
     public void animateTick(BlockState stateIn, World worldIn, BlockPos pos, Random rand) {
@@ -78,5 +90,4 @@ public class Marker extends TorchBlock {
         double d2 = (double)pos.getZ() + 0.5D + (rand.nextDouble() - 0.5D) * 0.2D;
         worldIn.addParticle(particle, d0, d1, d2, 0.0D, 0.0D, 0.0D);
     }
-
 }

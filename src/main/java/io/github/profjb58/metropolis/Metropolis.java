@@ -3,6 +3,8 @@ package io.github.profjb58.metropolis;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.ParseResults;
+import io.github.profjb58.metropolis.client.render.tileentity.MarkerTERenderer;
+import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.config.Config;
 import io.github.profjb58.metropolis.init.MItemGroup;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
@@ -13,12 +15,14 @@ import net.minecraft.command.impl.DeOpCommand;
 import net.minecraft.command.impl.OpCommand;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.gen.feature.structure.TemplateStructurePiece;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -57,10 +61,12 @@ public class Metropolis
 
     //  Stuff that happens after blocks are loaded.
     private void setup(final FMLCommonSetupEvent event) {
-
+        
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
+        ClientRegistry.bindTileEntityRenderer(Reference.MARKER_TE, MarkerTERenderer::new);
+
         RenderTypeLookup.setRenderLayer(Reference.PRISMARINE_MARKER, RenderType.getCutoutMipped());
         RenderTypeLookup.setRenderLayer(Reference.QUARTZ_MARKER, RenderType.getCutoutMipped());
     }

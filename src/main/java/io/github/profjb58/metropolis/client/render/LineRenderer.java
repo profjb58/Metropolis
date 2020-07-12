@@ -50,6 +50,29 @@ public class LineRenderer {
         int py = playerPos.getY();
         int pz = playerPos.getZ();
 
+        float[] lineColour = getLineColour(tile.getBlockState().getBlock());
+        drawLine(lineBuilder, generateProjectedMatrix(matrixStack),tilePos.getX() + 0.5f,tilePos.getY() + 0.6f,tilePos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, lineColour);
+
+        matrixStack.pop();
+        buffer.finish(CustomRenderTypes.THICK_LINES);
+    }
+
+    static void drawTileToTile(TileEntity tileStart, TileEntity tileEnd, ClientPlayerEntity player, MatrixStack matrixStack){
+        IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+        IVertexBuilder lineBuilder = buffer.getBuffer(CustomRenderTypes.THICK_LINES);
+
+        BlockPos tileStartPos = tileStart.getPos();
+        BlockPos tileEndPos = tileEnd.getPos();
+
+        float[] lineColour = getLineColour(tileStart.getBlockState().getBlock());
+        drawLine(lineBuilder, generateProjectedMatrix(matrixStack),tileStartPos.getX() + 0.5f,tileStartPos.getY() + 0.6f,tileStartPos.getZ() + 0.5f,
+                tileEndPos.getX() + 0.5f, tileEndPos.getY() + 0.5f, tileEndPos.getZ() + 0.5f, lineColour);
+
+        matrixStack.pop();
+        buffer.finish(CustomRenderTypes.THICK_LINES);
+    }
+
+    private static Matrix4f generateProjectedMatrix(MatrixStack matrixStack){
         //  Begin pushing to the matrix stack.
         matrixStack.push();
 
@@ -57,12 +80,7 @@ public class LineRenderer {
         Vec3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
         matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
 
-        Matrix4f positionMatrix = matrixStack.getLast().getMatrix();
-        float[] lineColour = getLineColour(tile.getBlockState().getBlock());
-        drawLine(lineBuilder, positionMatrix,tilePos.getX() + 0.5f,tilePos.getY() + 0.6f,tilePos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, lineColour);
-
-        matrixStack.pop();
-        buffer.finish(CustomRenderTypes.THICK_LINES);
+        return matrixStack.getLast().getMatrix();
     }
 
     private static float[] getLineColour(Block block){

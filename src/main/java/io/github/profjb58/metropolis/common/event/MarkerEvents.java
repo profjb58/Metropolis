@@ -52,7 +52,7 @@ public class MarkerEvents {
             MarkerTE markerTE = (MarkerTE) tile;
             if(markerTE.getPlayerPlaced() != null){
                 boolean isOp = player.hasPermissionLevel(4) || player.hasPermissionLevel(3) ? true : false;
-                if(!isOp && player.getUniqueID().toString().equals(markerTE.getPlayerPlaced().toString())){
+                if(!isOp && !player.getUniqueID().equals(markerTE.getPlayerPlaced())){
                     if(event.isCancelable()) event.setCanceled(true);
                 } else {
                     markerTE.removeMarker();

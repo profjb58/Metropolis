@@ -7,13 +7,13 @@ public class DirectionHelper {
 
     public static Direction getDirectionBetween(BlockPos currentPos, BlockPos prevPos){
         if(prevPos.getX() == currentPos.getX()){
-            if(prevPos.getZ() - currentPos.getZ() > 0){
-                return Direction.NORTH;
-            } else {
+            if(currentPos.getZ() - prevPos.getZ() > 0){
                 return Direction.SOUTH;
+            } else {
+                return Direction.NORTH;
             }
-        } else if(prevPos.getZ() == currentPos.getZ()) {
-            if(prevPos.getX() - currentPos.getX() > 0){
+        } else if(currentPos.getZ() == prevPos.getZ()) {
+            if(currentPos.getX() - prevPos.getX() > 0){
                 return Direction.WEST;
             } else {
                 return Direction.EAST;

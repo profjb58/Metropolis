@@ -15,7 +15,7 @@ public class CustomRenderTypes extends RenderType {
         super(nameIn, formatIn, drawModeIn, bufferSizeIn, useDelegateIn, needsSortingIn, setupTaskIn, clearTaskIn);
     }
 
-    private static final LineState THICK_LINE = new LineState(OptionalDouble.of(4f));
+    private static final LineState THICK_LINE = new LineState(OptionalDouble.of(6f));
     private static final LineState THIN_LINE = new LineState(OptionalDouble.of(1.5f));
 
     //  TODO - May need a lightmap, cull, and depth test.
@@ -28,6 +28,6 @@ public class CustomRenderTypes extends RenderType {
                     .texture(NO_TEXTURE)
                     .cull(CULL_DISABLED)
                     .lightmap(LIGHTMAP_DISABLED)
-                    //.depthTest(DEPTH_ALWAYS)  Might change this later
+                    .depthTest(DEPTH_ALWAYS)
                     .build(false));
 }
