@@ -8,6 +8,7 @@ import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
 import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
+import io.github.profjb58.metropolis.util.DirectionHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
@@ -37,42 +38,37 @@ public class LineRenderer {
     private static final float[] PRI_MARKER_COLOUR = {1.0f, 1.0f, 0.9f, 1.0f};
     private static final float[] QUARTZ_MARKER_COLOUR = {0.0f, 0.8f, 0.6f, 1.0f};
 
-    private static final int updateFrequency = 5;
-    private static int updateCounter = 0;
-
-    static void drawTileToPlayer(TileEntity tile, ClientPlayerEntity player, MatrixStack matrixStack){
+    static void drawTileToPlayer(TileEntity tile, ClientPlayerEntity player, MatrixStack matrixStack, float height){
         IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
         IVertexBuilder lineBuilder = buffer.getBuffer(CustomRenderTypes.THICK_LINES);
 
         BlockPos playerPos = player.getPosition();
         BlockPos tilePos = tile.getPos();
+
+        Direction facing = DirectionHelper.getDirectionBetween(playerPos, tilePos);
+
         int px = playerPos.getX();
         int py = playerPos.getY();
         int pz = playerPos.getZ();
 
+        if(facing == Direction.NORTH){
+            pz = pz + 1;
+        } else if (facing == Direction.SOUTH){
+            pz = pz -1;
+        } else if (facing == Direction.EAST){
+            px = px + 1;
+        } else if (facing == Direction.WEST){
+            px = px - 1;
+        }
+
         float[] lineColour = getLineColour(tile.getBlockState().getBlock());
-        drawLine(lineBuilder, generateProjectedMatrix(matrixStack),tilePos.getX() + 0.5f,tilePos.getY() + 0.6f,tilePos.getZ() + 0.5f, px + 0.5f, py + 0.5f, pz + 0.5f, lineColour);
+        drawLine(lineBuilder, generateProjectedMatrix(matrixStack),tilePos.getX() + 0.5f,tilePos.getY() + 0.5f,tilePos.getZ() + 0.5f, px + 0.5f, py + height, pz + 0.5f, lineColour);
 
         matrixStack.pop();
         buffer.finish(CustomRenderTypes.THICK_LINES);
     }
 
-    static void drawTileToTile(TileEntity tileStart, TileEntity tileEnd, ClientPlayerEntity player, MatrixStack matrixStack){
-        IRenderTypeBuffer.Impl buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
-        IVertexBuilder lineBuilder = buffer.getBuffer(CustomRenderTypes.THICK_LINES);
-
-        BlockPos tileStartPos = tileStart.getPos();
-        BlockPos tileEndPos = tileEnd.getPos();
-
-        float[] lineColour = getLineColour(tileStart.getBlockState().getBlock());
-        drawLine(lineBuilder, generateProjectedMatrix(matrixStack),tileStartPos.getX() + 0.5f,tileStartPos.getY() + 0.6f,tileStartPos.getZ() + 0.5f,
-                tileEndPos.getX() + 0.5f, tileEndPos.getY() + 0.5f, tileEndPos.getZ() + 0.5f, lineColour);
-
-        matrixStack.pop();
-        buffer.finish(CustomRenderTypes.THICK_LINES);
-    }
-
-    private static Matrix4f generateProjectedMatrix(MatrixStack matrixStack){
+    public static Matrix4f generateProjectedMatrix(MatrixStack matrixStack){
         //  Begin pushing to the matrix stack.
         matrixStack.push();
 
@@ -83,7 +79,7 @@ public class LineRenderer {
         return matrixStack.getLast().getMatrix();
     }
 
-    private static float[] getLineColour(Block block){
+    static float[] getLineColour(Block block){
         if(block.getBlock() == Reference.QUARTZ_MARKER){
             return PRI_MARKER_COLOUR;
         } else if(block.getBlock() == Reference.PRISMARINE_MARKER){

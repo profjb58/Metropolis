@@ -2,28 +2,25 @@ package io.github.profjb58.metropolis.common.block;
 
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
-import io.github.profjb58.metropolis.client.render.MarkerRegionRenderer;
 import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
-import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.RedstoneTorchBlock;
-import net.minecraft.block.SoundType;
-import net.minecraft.block.TorchBlock;
+import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.particle.RedstoneParticle;
+import net.minecraft.block.material.PushReaction;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.RedstoneParticleData;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.extensions.IForgeBlockState;
 
 import javax.annotation.Nullable;
 import java.util.Random;
@@ -54,32 +51,13 @@ public class Marker extends TorchBlock {
     }
 
     @Override
-    public void onBlockPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
-
-        if(!worldIn.isRemote){
-            if(placer != null && placer instanceof PlayerEntity){
-                PlayerEntity player = (PlayerEntity) placer;
-                UUID uuid = player.getUniqueID();
-
-                TileEntity tile = worldIn.getTileEntity(pos);
-                if(tile != null && tile instanceof MarkerTE){
-                    MarkerTE mte = (MarkerTE) tile;
-
-                    mte.init(uuid);
-                }
-            }
-        }
+    public PushReaction getPushReaction(BlockState state) {
+        return PushReaction.IGNORE;
     }
 
     @Override
-    public void onPlayerDestroy(IWorld worldIn, BlockPos pos, BlockState state) {
-        super.onPlayerDestroy(worldIn, pos, state);
-
-//        if(!worldIn.isRemote()){
-//            World world = worldIn.getWorld();
-//            world.notifyBlockUpdate(pos, state, state, 2);
-//        }
+    public void neighborChanged(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
+        super.neighborChanged(state, worldIn, pos, blockIn, fromPos, isMoving);
     }
 
     @OnlyIn(Dist.CLIENT)

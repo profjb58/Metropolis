@@ -1,23 +1,23 @@
 package io.github.profjb58.metropolis.common.tileentity;
+import com.mojang.authlib.GameProfile;
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
-import io.github.profjb58.metropolis.client.render.MarkerRegionRenderer;
+import io.github.profjb58.metropolis.client.render.MarkerLineRenderer;
 import io.github.profjb58.metropolis.common.event.MarkerEvents;
 import io.github.profjb58.metropolis.config.Config;
 import io.github.profjb58.metropolis.util.DirectionHelper;
-import io.github.profjb58.metropolis.util.RegionHelper;
 import net.minecraft.block.Block;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class MarkerTE extends TileEntity {
@@ -27,26 +27,41 @@ public class MarkerTE extends TileEntity {
     private Direction connectedFacing = null;
     private BlockPos prevMarker = null; private BlockPos nextMarker = null; private BlockPos headMarker = null;
 
-    //  Temporary variable. Determines if the region can be connected and therefore generated.
+    //  Temporary variables not saved to nbt. Determines if the region can be connected and therefore generated.
     boolean generateRegion = false;
 
     public MarkerTE() {
         super(Reference.MARKER_TE);
     }
 
-    public void init(@Nonnull UUID playerPlaced){
-        this.playerPlaced = playerPlaced;
+    //  Initialize marker either creating the 'head' of the region or connecting to a tail.
+    public void init(PlayerEntity playerPlaced){
+        this.playerPlaced = playerPlaced.getUniqueID();
+        PlayerEntity player = playerPlaced;
+
         MarkerTE marker = findWithinRadius(getMarkerRadius(this.getBlockState().getBlock()));
 
-        if(marker == null){
+        if(marker == null){ // No tail markers found.
             createHead(this);
         } else {
             connectTo(marker);
         }
+
+        if(generateRegion) {
+            boolean generated = generateRegion();
+
+            player.sendMessage(Metropolis.metropolisTextHeader);
+            player.sendMessage(new StringTextComponent("Region generated!"));
+            // TODO - Check this dosen't send a message serverside. Should only send on the client.
+            // TODO - Add link to explain the exception.
+            if (!generated) Metropolis.LOGGER.info("Metropolis region failed to generate from marker at pos " +
+                    "[" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] visit [INSERT LINK HERE] for more information");
+        }
     }
 
     /**
-     * Gets radius to search for different type of Marker Tile Entities. Keep properly updated.
+     * Gets radius to search for different type of Marker Tile Entities.
+     * On adding a new marker keep updated.
      **/
     public static int getMarkerRadius(Block markerBlock){
         if(markerBlock == Reference.PRISMARINE_MARKER){
@@ -56,16 +71,6 @@ public class MarkerTE extends TileEntity {
         } else {
             return 0;
         }
-    }
-
-    private void reset(){
-        isHead = false;
-        isTail = false;
-        headMarker = null;
-        prevMarker = null;
-        nextMarker = null;
-        connectedFacing = null;
-        markDirty();
     }
 
     private void createHead(MarkerTE mte){
@@ -97,14 +102,14 @@ public class MarkerTE extends TileEntity {
             prevMarkerTile.connectedFacing = connectedFacing;
         }
 
-        //  Check if any connected head markers are found.
-        if(generateRegion){
-            boolean generated = generateRegion();
-            // TODO - Check this dosen't send a message serverside. Should only send on the client.
-            // TODO - Add link to explain the exception.
-            if(!generated) Metropolis.LOGGER.info("Metropolis region failed to generate from marker at pos " +
-                    "[" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] visit [INSERT LINK HERE] for more information" );
-        }
+//        //  Check if any connected head markers are found.
+//        if(generateRegion){
+//            boolean generated = generateRegion();
+//            // TODO - Check this dosen't send a message serverside. Should only send on the client.
+//            // TODO - Add link to explain the exception.
+//            if(!generated) Metropolis.LOGGER.info("Metropolis region failed to generate from marker at pos " +
+//                    "[" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] visit [INSERT LINK HERE] for more information" );
+//        }
 
         this.markDirty();
         prevMarkerTile.markDirty();
@@ -210,9 +215,8 @@ public class MarkerTE extends TileEntity {
                 }
                 pmte.markDirty();
             } else {
-                Metropolis.LOGGER.error("Failed to correctly remove tail marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
+                Metropolis.LOGGER.debug("Failed to correctly remove tail marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
                         "for user with UUID: " + playerPlaced.toString());
-
             }
         } else if(pmte != null && nmte != null){
             Block thisBlock = getBlockState().getBlock();
@@ -259,8 +263,8 @@ public class MarkerTE extends TileEntity {
 
                 if(pmte.isHead) createHead(pmte); // If previous block was a head then reset it
             }
-            nmte.markDirty();
             pmte.markDirty();
+            nmte.markDirty();
         } else {
             Metropolis.LOGGER.debug("Failed to correctly delete marker at: [" + "x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + "] " +
                     "for user with UUID: " + playerPlaced.toString());
@@ -268,6 +272,10 @@ public class MarkerTE extends TileEntity {
         }
     }
 
+    /**
+     * Check if a region can be generated by looping forwards from the head marker to see if there is a link.
+     * @return - Boolean value for if the region can be generated = true, or cannot = false.
+     */
     private boolean generateRegion() {
         MarkerTE currentMarker = getMarkerFromPos(headMarker, world);
         MarkerTE headMarkerRef = getMarkerFromPos(headMarker, world);
@@ -285,7 +293,6 @@ public class MarkerTE extends TileEntity {
                     headMarkerRef.prevMarker = pos;
                     headMarkerRef.isTail = true;
                     headMarkerRef.markDirty();
-                    Metropolis.LOGGER.debug("Metropolis Marker region generated!");
                     return true;
                 }
                 currentMarker = nextMarkerTile;
@@ -297,17 +304,12 @@ public class MarkerTE extends TileEntity {
     @Override
     public void markDirty() {
         super.markDirty();
-        notifyClientUpdate();
-    }
-
-    private void notifyClientUpdate(){
         world.notifyBlockUpdate(pos, getBlockState(), getBlockState(), 2);
     }
 
-
     @Override
     public CompoundNBT write(CompoundNBT compound) {
-        super.write(compound);
+         super.write(compound);
 
         if (playerPlaced != null) compound.putUniqueId(MarkerEvents.UUID_NBT_TAG, this.playerPlaced);
 
@@ -315,12 +317,15 @@ public class MarkerTE extends TileEntity {
         compound.putBoolean("is_head", this.isHead);
 
         if (connectedFacing != null) compound.putString("connected_facing", DirectionHelper.convertToNBTString(this.connectedFacing));
-        if (prevMarker != null)
-            compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
-        if (nextMarker != null)
-            compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
-        if (headMarker != null)
-            compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
+
+        if (prevMarker != null) compound.putIntArray("prev_marker", new int[]{prevMarker.getX(), prevMarker.getY(), prevMarker.getZ()});
+        else compound.putIntArray("prev_marker", new int[]{}); // Integer array cannot be null. Hence make empty array.
+
+        if (nextMarker != null) compound.putIntArray("next_marker", new int[]{nextMarker.getX(), nextMarker.getY(), nextMarker.getZ()});
+        else compound.putIntArray("next_marker", new int[]{});
+
+        if (headMarker != null) compound.putIntArray("head_marker", new int[]{headMarker.getX(), headMarker.getY(), headMarker.getZ()});
+        else compound.putIntArray("head_marker", new int[]{});
 
         return compound;
     }
@@ -338,17 +343,24 @@ public class MarkerTE extends TileEntity {
         if(compound.contains("connected_facing")){
             this.connectedFacing = DirectionHelper.convertNBTStringToDirection(compound.getString("connected_facing"));
         }
-        if(compound.contains("prev_marker")){
+
+        if(compound.getIntArray("prev_marker").length == 0){ // Check if the integer array is empty.
+            this.prevMarker = null;
+        } else {
             int[] posIntArray = compound.getIntArray("prev_marker");
             this.prevMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
         }
 
-        if(compound.contains("next_marker")){
+        if(compound.getIntArray("next_marker").length == 0){
+            this.nextMarker = null;
+        } else {
             int[] posIntArray = compound.getIntArray("next_marker");
             this.nextMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
         }
 
-        if(compound.contains("head_marker")){
+        if(compound.getIntArray("head_marker").length == 0){
+            headMarker = null;
+        } else {
             int[] posIntArray = compound.getIntArray("head_marker");
             this.headMarker = new BlockPos(posIntArray[0], posIntArray[1], posIntArray[2]);
         }
@@ -370,7 +382,6 @@ public class MarkerTE extends TileEntity {
     public CompoundNBT getUpdateTag() {
         CompoundNBT compound = new CompoundNBT();
         this.write(compound);
-
         return compound;
     }
 
@@ -379,11 +390,10 @@ public class MarkerTE extends TileEntity {
         this.read(compound);
         BlockPos currentMarker = new BlockPos(compound.getInt("x"), compound.getInt("y"), compound.getInt("z"));
 
-        if(prevMarker == null && headMarker == null && isTail){ // Is the head.
-            MarkerRegionRenderer.setCurrentTailPos(currentMarker);
-            MarkerRegionRenderer.resetCurrentFacing();
+        if(isTail){
+            MarkerLineRenderer.setCurrentTailPos(currentMarker);
+            MarkerLineRenderer.resetCurrentFacing();
         }
-        MarkerRegionRenderer.addMarkerToDraw(currentMarker, headMarker, connectedFacing, isTail);
     }
 
     public static MarkerTE getMarkerFromPos(BlockPos pos, World world){
