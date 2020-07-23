@@ -1,4 +1,4 @@
-package io.github.profjb58.metropolis.util;
+package io.github.profjb58.metropolis.common.util;
 
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;

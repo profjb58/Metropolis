@@ -1,29 +1,22 @@
 package io.github.profjb58.metropolis.common.tileentity;
 
-import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
-import io.github.profjb58.metropolis.util.NBTHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.SoundType;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.IFluidState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.math.BlockPos;
 
 import javax.annotation.Nullable;
 
-public class QuarryTE extends TileEntity implements ITickableTileEntity {
+public class Quarry extends TileEntity implements ITickableTileEntity {
 
     boolean initialized = false;
     public int x,y,z, tick;
 
-    public QuarryTE() {
+    public Quarry() {
         super(Reference.QUARRY_TE);
     }
 

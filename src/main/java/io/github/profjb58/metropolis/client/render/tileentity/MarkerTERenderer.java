@@ -1,11 +1,11 @@
-package io.github.profjb58.metropolis.client.render.ter;
+package io.github.profjb58.metropolis.client.render.tileentity;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import io.github.profjb58.metropolis.Reference;
 import io.github.profjb58.metropolis.client.render.CustomRenderTypes;
 import io.github.profjb58.metropolis.client.render.LineRenderer;
-import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
+import io.github.profjb58.metropolis.common.tileentity.Marker;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.Matrix4f;
@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.util.math.BlockPos;
 
-public class MarkerTERenderer extends TileEntityRenderer<MarkerTE> {
+public class MarkerTERenderer extends TileEntityRenderer<Marker> {
 
     // Line Colours
     private static final float[] PRI_MARKER_COLOUR = {1.0f, 1.0f, 0.9f, 1.0f};
@@ -24,7 +24,7 @@ public class MarkerTERenderer extends TileEntityRenderer<MarkerTE> {
     }
 
     @Override
-    public void render(MarkerTE tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer buffer, int combinedLightIn, int combinedOverlayIn) {
+    public void render(Marker tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer buffer, int combinedLightIn, int combinedOverlayIn) {
 
         IVertexBuilder lineBuilder = buffer.getBuffer(CustomRenderTypes.THICK_LINES);
 
@@ -77,7 +77,7 @@ public class MarkerTERenderer extends TileEntityRenderer<MarkerTE> {
     }
 
     @Override
-    public boolean isGlobalRenderer(MarkerTE te) {
+    public boolean isGlobalRenderer(Marker te) {
         return true;
     }
 }

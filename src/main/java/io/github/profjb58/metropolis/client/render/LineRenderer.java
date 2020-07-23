@@ -1,37 +1,18 @@
 package io.github.profjb58.metropolis.client.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
-import com.sun.media.jfxmedia.logging.Logger;
-import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;
-import io.github.profjb58.metropolis.common.tileentity.MarkerTE;
-import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
-import io.github.profjb58.metropolis.util.DirectionHelper;
+import io.github.profjb58.metropolis.common.util.DirectionHelper;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.Matrix4f;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-
-import javax.annotation.Nullable;
 
 public class LineRenderer {
     // Line Colours

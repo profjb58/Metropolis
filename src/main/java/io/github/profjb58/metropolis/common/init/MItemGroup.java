@@ -1,4 +1,4 @@
-package io.github.profjb58.metropolis.init;
+package io.github.profjb58.metropolis.common.init;
 
 import io.github.profjb58.metropolis.Metropolis;
 import io.github.profjb58.metropolis.Reference;

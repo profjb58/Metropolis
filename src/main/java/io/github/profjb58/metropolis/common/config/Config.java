@@ -1,4 +1,4 @@
-package io.github.profjb58.metropolis.config;
+package io.github.profjb58.metropolis.common.config;
 
 import io.github.profjb58.metropolis.Metropolis;
 import net.minecraftforge.common.ForgeConfigSpec;
@@ -8,8 +8,6 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import org.apache.commons.lang3.tuple.Pair;
-
-import static com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type.Reference;
 
 @Mod.EventBusSubscriber(modid = Metropolis.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
@@ -21,9 +19,14 @@ public class Config {
     public static class Common {
         public final IntValue quartz_marker_radius;
         public final IntValue prismarine_marker_radius;
+        public final ForgeConfigSpec.BooleanValue debug_enabled;
 
         public Common(ForgeConfigSpec.Builder builder){
             builder.comment("Metropolis Mod Configuration").push("Metropolis");
+
+            debug_enabled = builder
+                    .comment("Enable debug mode")
+                    .define("debug_enabled", false);
 
             builder.comment("Markers").push("Markers");
 
@@ -35,6 +38,7 @@ public class Config {
                     .comment("Prismarine marker radius")
                     .defineInRange("prismarine_marker_radius", 32, 4, 128);
             builder.pop(2);
+
         }
     }
 
@@ -48,11 +52,9 @@ public class Config {
 
     @SubscribeEvent
     public static void onLoad(final ModConfig.Loading event){
-
     }
 
     @SubscribeEvent
     public static void onFileChange(final ModConfig.Reloading event){
-
     }
 }

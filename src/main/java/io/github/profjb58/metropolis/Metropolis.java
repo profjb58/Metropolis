@@ -2,9 +2,9 @@ package io.github.profjb58.metropolis;
 
 
 import io.github.profjb58.metropolis.client.render.MarkerLineRenderer;
-import io.github.profjb58.metropolis.client.render.ter.MarkerTERenderer;
-import io.github.profjb58.metropolis.config.Config;
-import io.github.profjb58.metropolis.init.MItemGroup;
+import io.github.profjb58.metropolis.client.render.tileentity.MarkerTERenderer;
+import io.github.profjb58.metropolis.common.config.Config;
+import io.github.profjb58.metropolis.common.init.MItemGroup;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.item.ItemGroup;
@@ -21,15 +21,15 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-
 @Mod(Metropolis.MOD_ID)
 public class Metropolis
 {
     public static final Logger LOGGER = LogManager.getLogger();
     public static final String MOD_ID = "metropolis";
+
     public static final ItemGroup M_BASE_ITEM_GROUP = new MItemGroup("base");
     public static StringTextComponent metropolisTextHeader;
+    public static boolean DEBUG_ENABLED = false;
 
     public static Metropolis instance;
 
@@ -50,6 +50,7 @@ public class Metropolis
 
     //  Stuff that happens after blocks are loaded.
     private void setup(final FMLCommonSetupEvent event) {
+
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {

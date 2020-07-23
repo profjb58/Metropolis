@@ -1,6 +1,6 @@
-package io.github.profjb58.metropolis.util;
+package io.github.profjb58.metropolis.common.util.nbt;
 
-import io.github.profjb58.metropolis.common.tileentity.QuarryTE;
+import io.github.profjb58.metropolis.common.tileentity.Quarry;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -17,14 +17,14 @@ public class NBTHelper {
             return writeItemStack((ItemStack)o);
         }
 
-        if(o instanceof QuarryTE) {
-            return writeQuarry((QuarryTE)o);
+        if(o instanceof Quarry) {
+            return writeQuarry((Quarry)o);
         }
 
         return null;
     }
 
-    private static CompoundNBT writeQuarry(QuarryTE o) {
+    private static CompoundNBT writeQuarry(Quarry o) {
         CompoundNBT compound = new CompoundNBT();
         compound.putInt("x", o.x);
         compound.putInt("y", o.y);
